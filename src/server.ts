@@ -110,6 +110,7 @@ async function main() {
 
   // Setup MPP-gated prove routes
   try {
+    if (process.env.NO_MPP === "1") throw new Error("MPP disabled via NO_MPP=1");
     const { Mppx, tempo } = await import("mppx/hono");
     const mppx = Mppx.create({
       methods: [
