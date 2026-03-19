@@ -97,6 +97,36 @@ async function main() {
     })
   );
 
+  // LLMs.txt (free)
+  app.get("/llms.txt", (c) => {
+    c.header("Content-Type", "text/plain");
+    return c.body(`# ZK Proof Service
+> Pay-per-proof Groth16 ZK proving via MPP. Real compute, not a proxy.
+
+## Live
+https://himess-zk-proof-service.hf.space
+
+## Endpoints
+- GET /health — Health check (free)
+- GET /circuits — List circuits and pricing (free)
+- POST /prove/1x2 — Generate 1x2 JoinSplit proof ($0.01 MPP)
+- POST /prove/2x2 — Generate 2x2 JoinSplit proof ($0.02 MPP)
+- POST /verify/:circuit — Verify a proof (free)
+
+## Pricing
+- 1x2 circuit: $0.01 per proof
+- 2x2 circuit: $0.02 per proof
+- Payment: USDC via Tempo MPP (automatic 402 flow)
+
+## What This Does
+Generates Groth16 zero-knowledge proofs for JoinSplit circuits (private UTXO transactions).
+Returns proof, public signals, and uint256[8] contract-ready format for on-chain Solidity verifiers.
+Proof generation: ~3-5s warm. Verification: ~50ms.
+
+## Source
+https://github.com/Himess/zk-proof-service`);
+  });
+
   // List circuits (free)
   app.get("/circuits", (c) =>
     c.json({
