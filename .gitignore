@@ -1,0 +1,10 @@
+node_modules/
+dist/
+.env
+*.log
+
+# Circuit artifacts (large binaries ~20MB)
+circuits/*.zkey
+circuits/*.wasm
+circuits/**/*.zkey
+circuits/**/*.wasm
