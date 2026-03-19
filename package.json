@@ -22,7 +22,8 @@
     "hono": "^4.12.8",
     "mppx": "^0.4.7",
     "snarkjs": "^0.7.6",
-    "viem": "^2.47.5"
+    "viem": "^2.47.5",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@types/node": "^25.5.0",
