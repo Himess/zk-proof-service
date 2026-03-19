@@ -87,6 +87,48 @@ async function main() {
   const app = new Hono();
   app.use("*", cors());
 
+  // Landing page
+  app.get("/", (c) => {
+    c.header("Content-Type", "text/html");
+    return c.body(`<!DOCTYPE html>
+<html><head><title>ZK Proof Service</title>
+<style>body{font-family:system-ui;max-width:700px;margin:60px auto;padding:0 20px;background:#0a0a0a;color:#e0e0e0}
+h1{color:#fff}a{color:#58a6ff}code{background:#1a1a2e;padding:2px 6px;border-radius:4px;font-size:14px}
+pre{background:#1a1a2e;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px}
+.badge{display:inline-block;background:#238636;color:#fff;padding:4px 10px;border-radius:12px;font-size:13px;margin:4px}
+table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;padding:8px;text-align:left}th{background:#1a1a2e}</style></head>
+<body>
+<h1>ZK Proof Service</h1>
+<p><span class="badge">LIVE</span> <span class="badge">Groth16</span> <span class="badge">MPP</span></p>
+<p>Pay-per-proof ZK proving via <a href="https://mpp.dev">Tempo MPP</a>. Real compute, not a proxy.</p>
+
+<h2>Try it</h2>
+<pre>tempo request -t https://himess-zk-proof-service.hf.space/circuits
+
+tempo request -v -X POST \\
+  -H "Content-Type: application/json" \\
+  -d @input.json \\
+  https://himess-zk-proof-service.hf.space/prove/1x2</pre>
+
+<h2>Endpoints</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>GET</td><td><a href="/health">/health</a></td><td>Free</td><td>Health check</td></tr>
+<tr><td>GET</td><td><a href="/circuits">/circuits</a></td><td>Free</td><td>List circuits & pricing</td></tr>
+<tr><td>GET</td><td><a href="/llms.txt">/llms.txt</a></td><td>Free</td><td>Agent discovery</td></tr>
+<tr><td>POST</td><td>/prove/1x2</td><td>$0.01</td><td>Generate 1x2 proof</td></tr>
+<tr><td>POST</td><td>/prove/2x2</td><td>$0.02</td><td>Generate 2x2 proof</td></tr>
+<tr><td>POST</td><td>/verify/:circuit</td><td>Free</td><td>Verify a proof</td></tr>
+</table>
+
+<h2>Performance</h2>
+<p>~2-5s proof generation · ~50ms verification · 13,726 constraints · BN254 curve</p>
+
+<h2>Links</h2>
+<p><a href="https://github.com/Himess/zk-proof-service">GitHub</a> · <a href="/llms.txt">llms.txt</a> · <a href="/circuits">API</a></p>
+</body></html>`);
+  });
+
   // Health check (free)
   app.get("/health", (c) =>
     c.json({
