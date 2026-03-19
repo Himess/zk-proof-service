@@ -8,7 +8,7 @@ RUN npm install
 COPY src/ ./src/
 COPY circuits/ ./circuits/
 
-ENV PORT=3402
-EXPOSE 3402
+ENV PORT=7860
+EXPOSE 7860
 
 CMD ["npx", "tsx", "src/server.ts"]

@@ -3,8 +3,7 @@ dist/
 .env
 *.log
 
-# Circuit artifacts (large binaries ~20MB)
-circuits/*.zkey
-circuits/*.wasm
-circuits/**/*.zkey
-circuits/**/*.wasm
+# Circuit artifacts are large but needed for deployment
+# Uncomment below to exclude from git:
+# circuits/**/*.zkey
+# circuits/**/*.wasm
