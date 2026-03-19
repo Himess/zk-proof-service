@@ -166,12 +166,12 @@ const TASKS: AgentTask[] = [
       "Standard private transfer, one input note. 1x2 handles this. Cost-effective at $0.01.",
   },
   {
-    name: "UTXO Consolidation",
-    description: "Merge two UTXOs into a single output for gas efficiency",
-    circuit: "2x2",
+    name: "Large Withdrawal",
+    description: "Withdraw 100 USDC from the privacy pool",
+    circuit: "1x2",
     amount: 100_000_000n,
     reasoning:
-      "Two inputs need merging — requires 2x2 circuit ($0.02). Higher cost but necessary for 2-input joins.",
+      "Large withdrawal from shielded pool. 1x2 circuit at $0.01 — trivial cost for 100 USDC privacy.",
   },
 ];
 
@@ -269,8 +269,12 @@ async function main() {
 
     try {
       const inputJson = JSON.stringify(circuitInput);
+      // Write input to temp file to avoid shell escaping issues with large JSON
+      const fs = await import("fs");
+      const tmpFile = `/tmp/zk-agent-input-${i}.json`;
+      fs.writeFileSync(tmpFile, inputJson);
       // Use tempo request CLI which handles the MPP payment flow
-      const cmd = `tempo request -X POST "${SERVER_URL}/prove/${task.circuit}" -H "Content-Type: application/json" -d '${inputJson}'`;
+      const cmd = `tempo request -X POST "${SERVER_URL}/prove/${task.circuit}" -H "Content-Type: application/json" -d @${tmpFile}`;
 
       info("Sending paid request via `tempo request`...");
       const raw = execSync(cmd, {
@@ -295,7 +299,8 @@ async function main() {
         );
         money(`Spent: $${price.toFixed(2)} | Running total: $${totalSpent.toFixed(2)}`);
 
-        // Verify the proof (free)
+        // Verify the proof (free) — small delay to let server finish any cleanup
+        await new Promise((r) => setTimeout(r, 500));
         console.log("");
         info("Verifying proof (free endpoint)...");
         const verifyStart = Date.now();
@@ -324,12 +329,8 @@ async function main() {
       }
     } catch (e: any) {
       const elapsed = Date.now() - startTime;
-      fail(`Request failed after ${elapsed}ms: ${e.message?.split("\n")[0]}`);
-
-      // If tempo CLI not found, offer alternative
-      if (e.message?.includes("not found") || e.message?.includes("ENOENT")) {
-        info("Hint: Install tempo CLI — https://docs.tempo.xyz");
-      }
+      const errMsg = e.stderr?.split("\n")[0] || e.message?.split("\n")[0] || "Unknown error";
+      fail(`Request failed after ${elapsed}ms: ${errMsg}`);
     }
   }
 
