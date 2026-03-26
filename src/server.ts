@@ -1,6 +1,9 @@
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serve } from "@hono/node-server";
+import { readFileSync } from "fs";
+import { resolve, dirname } from "path";
+import { fileURLToPath } from "url";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { createClient, http } from "viem";
 import {
@@ -93,6 +96,7 @@ async function main() {
     c.header("Content-Type", "text/html");
     return c.body(`<!DOCTYPE html>
 <html><head><title>ZKProver</title>
+<link rel="icon" type="image/png" href="/favicon.png">
 <style>body{font-family:system-ui;max-width:700px;margin:60px auto;padding:0 20px;background:#0a0a0a;color:#e0e0e0}
 h1{color:#fff}a{color:#58a6ff}code{background:#1a1a2e;padding:2px 6px;border-radius:4px;font-size:14px}
 pre{background:#1a1a2e;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px}
@@ -128,6 +132,20 @@ tempo request -v -X POST \\
 <h2>Links</h2>
 <p><a href="https://github.com/Himess/zk-proof-service">GitHub</a> · <a href="/llms.txt">llms.txt</a> · <a href="/circuits">API</a></p>
 </body></html>`);
+  });
+
+  // Favicon
+  const __dirname = dirname(fileURLToPath(import.meta.url));
+  const faviconBuf = readFileSync(resolve(__dirname, "../favicon.png"));
+  app.get("/favicon.png", (c) => {
+    c.header("Content-Type", "image/png");
+    c.header("Cache-Control", "public, max-age=86400");
+    return c.body(faviconBuf);
+  });
+  app.get("/favicon.ico", (c) => {
+    c.header("Content-Type", "image/png");
+    c.header("Cache-Control", "public, max-age=86400");
+    return c.body(faviconBuf);
   });
 
   // Health check (free)
