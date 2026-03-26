@@ -14,6 +14,116 @@ import {
 } from "./prover.js";
 import type { CircuitType } from "./prover.js";
 
+// --- x402 v2 schema helper ---
+// MPPscan validates input schemas from the 402 response's PAYMENT-REQUIRED header
+// (x402 v2 format with extensions.bazaar.schema), NOT from the OpenAPI spec.
+// This middleware intercepts mppx 402 responses and adds the required header.
+function withX402Schema(
+  schema: { input: Record<string, unknown>; output?: Record<string, unknown> },
+  description: string,
+) {
+  return async (c: any, next: () => Promise<void>) => {
+    await next();
+    // Only augment 402 Payment Required responses
+    if (!c.res || c.res.status !== 402) return;
+
+    // Build x402 v2 PAYMENT-REQUIRED payload with bazaar schema extension
+    const x402Payload = {
+      x402Version: 2,
+      resource: {
+        url: c.req.url,
+        method: "POST",
+        description,
+        mimeType: "application/json",
+      },
+      accepts: [] as unknown[],
+      extensions: {
+        bazaar: {
+          info: {
+            input: { type: "http", bodyType: "json", body: {} },
+          },
+          schema: {
+            $schema: "https://json-schema.org/draft/2020-12/schema",
+            type: "object",
+            properties: {
+              input: {
+                type: "object",
+                properties: {
+                  type: { type: "string", const: "http" },
+                  bodyType: { type: "string", enum: ["json"] },
+                  body: schema.input,
+                },
+                required: ["type", "bodyType", "body"],
+                additionalProperties: false,
+              },
+              ...(schema.output
+                ? {
+                    output: {
+                      type: "object",
+                      properties: {
+                        example: schema.output,
+                      },
+                    },
+                  }
+                : {}),
+            },
+            required: ["input"],
+          },
+        },
+      },
+    };
+
+    const encoded = Buffer.from(JSON.stringify(x402Payload)).toString("base64");
+
+    // Clone response with PAYMENT-REQUIRED header added
+    const original = c.res;
+    const body = await original.clone().arrayBuffer();
+    const newHeaders = new Headers(original.headers);
+    newHeaders.set("PAYMENT-REQUIRED", encoded);
+    c.res = new Response(body, {
+      status: 402,
+      headers: newHeaders,
+    });
+  };
+}
+
+// --- Circuit input/output schemas for x402 bazaar discovery ---
+const CIRCUIT_INPUT_SCHEMA_1x2 = {
+  $schema: "https://json-schema.org/draft/2020-12/schema",
+  type: "object",
+  properties: {
+    root: { type: "string", minLength: 1, description: "Merkle tree root" },
+    publicAmount: { type: "string", minLength: 1, description: "Public amount for deposit/withdrawal" },
+    extDataHash: { type: "string", minLength: 1, description: "External data hash" },
+    protocolFee: { type: "string", description: "Protocol fee" },
+    inputNullifiers: { type: "array", items: { type: "string" } },
+    outputCommitments: { type: "array", items: { type: "string" } },
+    inAmount: { type: "array", items: { type: "string" } },
+    inPrivateKey: { type: "array", items: { type: "string" } },
+    inBlinding: { type: "array", items: { type: "string" } },
+    inPathIndices: { type: "array", items: { type: "string" } },
+    inPathElements: { type: "array", items: { type: "array", items: { type: "string" } } },
+    outAmount: { type: "array", items: { type: "string" } },
+    outPubkey: { type: "array", items: { type: "string" } },
+    outBlinding: { type: "array", items: { type: "string" } },
+  },
+  required: ["root", "publicAmount", "extDataHash", "inputNullifiers", "outputCommitments", "inAmount", "inPrivateKey", "inBlinding", "inPathIndices", "inPathElements", "outAmount", "outPubkey", "outBlinding"],
+  additionalProperties: false,
+} as const;
+
+const CIRCUIT_OUTPUT_SCHEMA = {
+  type: "object",
+  properties: {
+    success: { type: "boolean" },
+    circuit: { type: "string" },
+    proof: { type: "object" },
+    publicSignals: { type: "array", items: { type: "string" } },
+    contractProof: { type: "array", items: { type: "string" } },
+    generationTimeMs: { type: "number" },
+  },
+  required: ["success", "circuit", "proof", "publicSignals", "contractProof"],
+} as const;
+
 // --- Configuration ---
 const PORT = Number(process.env.PORT) || 3402;
 const PRIVATE_KEY = (process.env.SERVER_PRIVATE_KEY ||
@@ -181,11 +291,6 @@ tempo request -v -X POST \\
           get: {
             summary: "Health check",
             description: "Returns service status, wallet address, and chain info. Free, no payment required.",
-            "x-payment-info": {
-              pricingMode: "fixed",
-              price: "0",
-              protocols: ["mpp"],
-            },
             parameters: [
               {
                 name: "format",
@@ -218,11 +323,6 @@ tempo request -v -X POST \\
           get: {
             summary: "List available circuits and pricing",
             description: "Returns all supported ZK circuits with constraint counts and per-proof pricing. Free, no payment required.",
-            "x-payment-info": {
-              pricingMode: "fixed",
-              price: "0",
-              protocols: ["mpp"],
-            },
             parameters: [
               {
                 name: "format",
@@ -388,11 +488,6 @@ tempo request -v -X POST \\
           post: {
             summary: "Verify a Groth16 proof",
             description: "Verifies a previously generated proof. Free, no payment required.",
-            "x-payment-info": {
-              pricingMode: "fixed",
-              price: "0",
-              protocols: ["mpp"],
-            },
             parameters: [
               {
                 name: "circuit",
@@ -508,8 +603,24 @@ https://github.com/Himess/zk-proof-service`);
       secretKey: process.env.MPP_SECRET_KEY || "dev-secret-key-change-in-production",
     });
 
-    app.post("/prove/1x2", mppx.charge({ amount: "0.01", description: "ZK proof (1x2)" }), handleProve);
-    app.post("/prove/2x2", mppx.charge({ amount: "0.02", description: "ZK proof (2x2)" }), handleProve);
+    app.post(
+      "/prove/1x2",
+      withX402Schema(
+        { input: CIRCUIT_INPUT_SCHEMA_1x2, output: CIRCUIT_OUTPUT_SCHEMA },
+        "Generate Groth16 proof (1-input, 2-output JoinSplit)",
+      ),
+      mppx.charge({ amount: "0.01", description: "ZK proof (1x2)" }),
+      handleProve,
+    );
+    app.post(
+      "/prove/2x2",
+      withX402Schema(
+        { input: CIRCUIT_INPUT_SCHEMA_1x2, output: CIRCUIT_OUTPUT_SCHEMA },
+        "Generate Groth16 proof (2-input, 2-output JoinSplit)",
+      ),
+      mppx.charge({ amount: "0.02", description: "ZK proof (2x2)" }),
+      handleProve,
+    );
     console.log("MPP payment gating enabled");
   } catch (e) {
     console.warn("mppx not available, running free:", (e as Error).message);
