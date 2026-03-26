@@ -162,8 +162,20 @@ tempo request -v -X POST \\
         "/health": {
           get: {
             summary: "Health check",
-            description: "Returns service status, wallet address, and chain info",
-            "x-auth-mode": "none",
+            description: "Returns service status, wallet address, and chain info. Free, no payment required.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0",
+              protocols: ["mpp"],
+            },
+            parameters: [
+              {
+                name: "format",
+                in: "query",
+                required: false,
+                schema: { type: "string", enum: ["json"], default: "json" },
+              },
+            ],
             responses: {
               "200": {
                 description: "Service is healthy",
@@ -187,8 +199,20 @@ tempo request -v -X POST \\
         "/circuits": {
           get: {
             summary: "List available circuits and pricing",
-            description: "Returns all supported ZK circuits with constraint counts and per-proof pricing",
-            "x-auth-mode": "none",
+            description: "Returns all supported ZK circuits with constraint counts and per-proof pricing. Free, no payment required.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0",
+              protocols: ["mpp"],
+            },
+            parameters: [
+              {
+                name: "format",
+                in: "query",
+                required: false,
+                schema: { type: "string", enum: ["json"], default: "json" },
+              },
+            ],
             responses: {
               "200": {
                 description: "Circuit list with pricing",
@@ -223,14 +247,9 @@ tempo request -v -X POST \\
             summary: "Generate Groth16 proof (1-input, 2-output JoinSplit)",
             description: "Generates a Groth16 ZK proof for a 1x2 JoinSplit circuit. Requires MPP payment of $0.01 USDC.",
             "x-payment-info": {
-              protocols: ["mpp"],
               pricingMode: "fixed",
               price: "10000",
-              intent: "charge",
-              method: "tempo",
-              amount: "10000",
-              currency: PATHUSD,
-              description: "$0.01 per proof",
+              protocols: ["mpp"],
             },
             requestBody: {
               required: true,
@@ -273,14 +292,9 @@ tempo request -v -X POST \\
             summary: "Generate Groth16 proof (2-input, 2-output JoinSplit)",
             description: "Generates a Groth16 ZK proof for a 2x2 JoinSplit circuit. Requires MPP payment of $0.02 USDC.",
             "x-payment-info": {
-              protocols: ["mpp"],
               pricingMode: "fixed",
               price: "20000",
-              intent: "charge",
-              method: "tempo",
-              amount: "20000",
-              currency: PATHUSD,
-              description: "$0.02 per proof",
+              protocols: ["mpp"],
             },
             requestBody: {
               required: true,
@@ -322,7 +336,11 @@ tempo request -v -X POST \\
           post: {
             summary: "Verify a Groth16 proof",
             description: "Verifies a previously generated proof. Free, no payment required.",
-            "x-auth-mode": "none",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0",
+              protocols: ["mpp"],
+            },
             parameters: [
               {
                 name: "circuit",
@@ -366,6 +384,18 @@ tempo request -v -X POST \\
           },
         },
       },
+    })
+  );
+
+  // Well-known x402 discovery (fallback for agents that cannot read OpenAPI)
+  app.get("/.well-known/x402", (c) =>
+    c.json({
+      version: 1,
+      resources: [
+        "POST /prove/1x2",
+        "POST /prove/2x2",
+      ],
+      description: "ZKProver: pay-per-proof Groth16 ZK proving service via MPP. POST circuit inputs to /prove/1x2 ($0.01) or /prove/2x2 ($0.02). Verification at /verify/:circuit is free.",
     })
   );
 
