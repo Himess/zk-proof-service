@@ -165,7 +165,7 @@ tempo request -v -X POST \\
       info: {
         title: "ZKProver",
         version: "1.0.0",
-        description: "Pay-per-proof Groth16 ZK proving service. Real SNARK compute via MPP — not a proxy.",
+        description: "Pay-per-proof Groth16 ZK proving service on Tempo MPP.",
         "x-guidance": "Use ZKProver to generate and verify Groth16 zero-knowledge proofs for JoinSplit circuits. POST circuit inputs to /prove/1x2 ($0.01) or /prove/2x2 ($0.02). Payment is automatic via MPP 402 flow. Verification at /verify/:circuit is free. Check /circuits for available circuits and pricing.",
       },
       "x-service-info": {
