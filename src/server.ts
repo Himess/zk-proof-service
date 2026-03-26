@@ -163,6 +163,7 @@ tempo request -v -X POST \\
           get: {
             summary: "Health check",
             description: "Returns service status, wallet address, and chain info",
+            "x-auth-mode": "none",
             responses: {
               "200": {
                 description: "Service is healthy",
@@ -187,6 +188,7 @@ tempo request -v -X POST \\
           get: {
             summary: "List available circuits and pricing",
             description: "Returns all supported ZK circuits with constraint counts and per-proof pricing",
+            "x-auth-mode": "none",
             responses: {
               "200": {
                 description: "Circuit list with pricing",
@@ -320,6 +322,7 @@ tempo request -v -X POST \\
           post: {
             summary: "Verify a Groth16 proof",
             description: "Verifies a previously generated proof. Free, no payment required.",
+            "x-auth-mode": "none",
             parameters: [
               {
                 name: "circuit",
