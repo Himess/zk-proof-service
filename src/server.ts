@@ -262,12 +262,14 @@ tempo request -v -X POST \\
         },
         "/prove/1x2": {
           post: {
+            operationId: "prove1x2",
             summary: "Generate Groth16 proof (1-input, 2-output JoinSplit)",
+            tags: ["Proving"],
             description: "Generates a Groth16 ZK proof for a 1x2 JoinSplit circuit. Requires MPP payment of $0.01 USDC.",
             "x-payment-info": {
               pricingMode: "fixed",
-              price: "0.01",
-              protocols: ["mpp"],
+              price: "0.010000",
+              protocols: ["x402", "mpp"],
             },
             requestBody: {
               required: true,
@@ -275,11 +277,10 @@ tempo request -v -X POST \\
                 "application/json": {
                   schema: {
                     type: "object",
-                    description: "JoinSplit circuit inputs for ZK proof generation",
                     properties: {
-                      root: { type: "string", description: "Merkle tree root" },
-                      publicAmount: { type: "string", description: "Public amount for deposit/withdrawal" },
-                      extDataHash: { type: "string", description: "External data hash" },
+                      root: { type: "string", minLength: 1, description: "Merkle tree root" },
+                      publicAmount: { type: "string", minLength: 1, description: "Public amount for deposit/withdrawal" },
+                      extDataHash: { type: "string", minLength: 1, description: "External data hash" },
                       protocolFee: { type: "string", description: "Protocol fee" },
                       inputNullifiers: { type: "array", items: { type: "string" } },
                       outputCommitments: { type: "array", items: { type: "string" } },
@@ -293,14 +294,13 @@ tempo request -v -X POST \\
                       outBlinding: { type: "array", items: { type: "string" } },
                     },
                     required: ["root", "publicAmount", "extDataHash", "inputNullifiers", "outputCommitments", "inAmount", "inPrivateKey", "inBlinding", "inPathIndices", "inPathElements", "outAmount", "outPubkey", "outBlinding"],
-                    additionalProperties: true,
                   },
                 },
               },
             },
             responses: {
               "200": {
-                description: "Proof generated successfully",
+                description: "Successful response",
                 content: {
                   "application/json": {
                     schema: {
@@ -308,9 +308,9 @@ tempo request -v -X POST \\
                       properties: {
                         success: { type: "boolean" },
                         circuit: { type: "string" },
-                        proof: { type: "object", description: "Groth16 proof (pi_a, pi_b, pi_c)" },
+                        proof: { type: "object" },
                         publicSignals: { type: "array", items: { type: "string" } },
-                        contractProof: { type: "array", items: { type: "string" }, description: "uint256[8] for Solidity verifier" },
+                        contractProof: { type: "array", items: { type: "string" } },
                         generationTimeMs: { type: "number" },
                       },
                       required: ["success", "circuit", "proof", "publicSignals", "contractProof"],
@@ -318,18 +318,20 @@ tempo request -v -X POST \\
                   },
                 },
               },
-              "402": { description: "Payment Required — MPP payment needed" },
+              "402": { description: "Payment Required" },
             },
           },
         },
         "/prove/2x2": {
           post: {
+            operationId: "prove2x2",
             summary: "Generate Groth16 proof (2-input, 2-output JoinSplit)",
+            tags: ["Proving"],
             description: "Generates a Groth16 ZK proof for a 2x2 JoinSplit circuit. Requires MPP payment of $0.02 USDC.",
             "x-payment-info": {
               pricingMode: "fixed",
-              price: "0.02",
-              protocols: ["mpp"],
+              price: "0.020000",
+              protocols: ["x402", "mpp"],
             },
             requestBody: {
               required: true,
@@ -337,11 +339,10 @@ tempo request -v -X POST \\
                 "application/json": {
                   schema: {
                     type: "object",
-                    description: "JoinSplit circuit inputs for ZK proof generation",
                     properties: {
-                      root: { type: "string", description: "Merkle tree root" },
-                      publicAmount: { type: "string", description: "Public amount for deposit/withdrawal" },
-                      extDataHash: { type: "string", description: "External data hash" },
+                      root: { type: "string", minLength: 1, description: "Merkle tree root" },
+                      publicAmount: { type: "string", minLength: 1, description: "Public amount for deposit/withdrawal" },
+                      extDataHash: { type: "string", minLength: 1, description: "External data hash" },
                       protocolFee: { type: "string", description: "Protocol fee" },
                       inputNullifiers: { type: "array", items: { type: "string" } },
                       outputCommitments: { type: "array", items: { type: "string" } },
@@ -355,14 +356,13 @@ tempo request -v -X POST \\
                       outBlinding: { type: "array", items: { type: "string" } },
                     },
                     required: ["root", "publicAmount", "extDataHash", "inputNullifiers", "outputCommitments", "inAmount", "inPrivateKey", "inBlinding", "inPathIndices", "inPathElements", "outAmount", "outPubkey", "outBlinding"],
-                    additionalProperties: true,
                   },
                 },
               },
             },
             responses: {
               "200": {
-                description: "Proof generated successfully",
+                description: "Successful response",
                 content: {
                   "application/json": {
                     schema: {
@@ -370,9 +370,9 @@ tempo request -v -X POST \\
                       properties: {
                         success: { type: "boolean" },
                         circuit: { type: "string" },
-                        proof: { type: "object", description: "Groth16 proof (pi_a, pi_b, pi_c)" },
+                        proof: { type: "object" },
                         publicSignals: { type: "array", items: { type: "string" } },
-                        contractProof: { type: "array", items: { type: "string" }, description: "uint256[8] for Solidity verifier" },
+                        contractProof: { type: "array", items: { type: "string" } },
                         generationTimeMs: { type: "number" },
                       },
                       required: ["success", "circuit", "proof", "publicSignals", "contractProof"],
