@@ -21,6 +21,7 @@ import type { CircuitType } from "./prover.js";
 function withX402Schema(
   schema: { input: Record<string, unknown>; output?: Record<string, unknown> },
   description: string,
+  amount: string,
 ) {
   return async (c: any, next: () => Promise<void>) => {
     await next();
@@ -36,7 +37,13 @@ function withX402Schema(
         description,
         mimeType: "application/json",
       },
-      accepts: [] as unknown[],
+      accepts: [{
+        scheme: "exact",
+        network: "tempo",
+        maxAmountRequired: amount,
+        asset: PATHUSD,
+        payTo: OWNER_WALLET,
+      }],
       extensions: {
         bazaar: {
           info: {
@@ -291,6 +298,7 @@ tempo request -v -X POST \\
           get: {
             summary: "Health check",
             description: "Returns service status, wallet address, and chain info. Free, no payment required.",
+            security: [],
             parameters: [
               {
                 name: "format",
@@ -323,6 +331,7 @@ tempo request -v -X POST \\
           get: {
             summary: "List available circuits and pricing",
             description: "Returns all supported ZK circuits with constraint counts and per-proof pricing. Free, no payment required.",
+            security: [],
             parameters: [
               {
                 name: "format",
@@ -488,6 +497,7 @@ tempo request -v -X POST \\
           post: {
             summary: "Verify a Groth16 proof",
             description: "Verifies a previously generated proof. Free, no payment required.",
+            security: [],
             parameters: [
               {
                 name: "circuit",
@@ -608,6 +618,7 @@ https://github.com/Himess/zk-proof-service`);
       withX402Schema(
         { input: CIRCUIT_INPUT_SCHEMA_1x2, output: CIRCUIT_OUTPUT_SCHEMA },
         "Generate Groth16 proof (1-input, 2-output JoinSplit)",
+        "10000",
       ),
       mppx.charge({ amount: "0.01", description: "ZK proof (1x2)" }),
       handleProve,
@@ -617,6 +628,7 @@ https://github.com/Himess/zk-proof-service`);
       withX402Schema(
         { input: CIRCUIT_INPUT_SCHEMA_1x2, output: CIRCUIT_OUTPUT_SCHEMA },
         "Generate Groth16 proof (2-input, 2-output JoinSplit)",
+        "20000",
       ),
       mppx.charge({ amount: "0.02", description: "ZK proof (2x2)" }),
       handleProve,
