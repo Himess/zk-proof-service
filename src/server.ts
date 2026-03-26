@@ -17,9 +17,10 @@ const PRIVATE_KEY = (process.env.SERVER_PRIVATE_KEY ||
   generatePrivateKey()) as `0x${string}`;
 const account = privateKeyToAccount(PRIVATE_KEY);
 const PATHUSD = "0x20c000000000000000000000b9537d11c60e8b50" as const;
+const OWNER_WALLET = "0x4013AE1C1473f6CB37AA44eedf58BDF7Fa4068F7" as const;
 
 console.log(`Server wallet: ${account.address}`);
-console.log(`Private key: ${PRIVATE_KEY}`);
+console.log(`Payment recipient: ${OWNER_WALLET}`);
 
 // --- Fund server on testnet ---
 async function fundServer() {
@@ -91,14 +92,14 @@ async function main() {
   app.get("/", (c) => {
     c.header("Content-Type", "text/html");
     return c.body(`<!DOCTYPE html>
-<html><head><title>ZK Proof Service</title>
+<html><head><title>ZKProver</title>
 <style>body{font-family:system-ui;max-width:700px;margin:60px auto;padding:0 20px;background:#0a0a0a;color:#e0e0e0}
 h1{color:#fff}a{color:#58a6ff}code{background:#1a1a2e;padding:2px 6px;border-radius:4px;font-size:14px}
 pre{background:#1a1a2e;padding:16px;border-radius:8px;overflow-x:auto;font-size:13px}
 .badge{display:inline-block;background:#238636;color:#fff;padding:4px 10px;border-radius:12px;font-size:13px;margin:4px}
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;padding:8px;text-align:left}th{background:#1a1a2e}</style></head>
 <body>
-<h1>ZK Proof Service</h1>
+<h1>ZKProver</h1>
 <p><span class="badge">LIVE</span> <span class="badge">Groth16</span> <span class="badge">MPP</span></p>
 <p>Pay-per-proof ZK proving via <a href="https://mpp.dev">Tempo MPP</a>. Real compute, not a proxy.</p>
 
@@ -133,16 +134,242 @@ tempo request -v -X POST \\
   app.get("/health", (c) =>
     c.json({
       status: "ok",
-      wallet: account.address,
+      wallet: OWNER_WALLET,
       chain: "tempo-moderato",
       chainId: 42431,
+    })
+  );
+
+  // OpenAPI Discovery (required for MPPscan)
+  app.get("/openapi.json", (c) =>
+    c.json({
+      openapi: "3.1.0",
+      info: {
+        title: "ZKProver",
+        version: "1.0.0",
+        description: "Pay-per-proof Groth16 ZK proving service. Real SNARK compute via MPP — not a proxy.",
+        "x-guidance": "Use ZKProver to generate and verify Groth16 zero-knowledge proofs for JoinSplit circuits. POST circuit inputs to /prove/1x2 ($0.01) or /prove/2x2 ($0.02). Payment is automatic via MPP 402 flow. Verification at /verify/:circuit is free. Check /circuits for available circuits and pricing.",
+      },
+      "x-service-info": {
+        categories: ["compute", "developer-tools"],
+        docs: {
+          homepage: "https://github.com/Himess/zk-proof-service",
+          llms: "https://himess-zk-proof-service.hf.space/llms.txt",
+        },
+      },
+      servers: [{ url: "https://himess-zk-proof-service.hf.space" }],
+      paths: {
+        "/health": {
+          get: {
+            summary: "Health check",
+            description: "Returns service status, wallet address, and chain info",
+            responses: {
+              "200": {
+                description: "Service is healthy",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        status: { type: "string", example: "ok" },
+                        wallet: { type: "string" },
+                        chain: { type: "string" },
+                        chainId: { type: "integer" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        "/circuits": {
+          get: {
+            summary: "List available circuits and pricing",
+            description: "Returns all supported ZK circuits with constraint counts and per-proof pricing",
+            responses: {
+              "200": {
+                description: "Circuit list with pricing",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        circuits: {
+                          type: "array",
+                          items: {
+                            type: "object",
+                            properties: {
+                              id: { type: "string" },
+                              description: { type: "string" },
+                              constraintCount: { type: "integer" },
+                              publicSignals: { type: "integer" },
+                            },
+                          },
+                        },
+                        pricing: { type: "object" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        "/prove/1x2": {
+          post: {
+            summary: "Generate Groth16 proof (1-input, 2-output JoinSplit)",
+            description: "Generates a Groth16 ZK proof for a 1x2 JoinSplit circuit. Requires MPP payment of $0.01 USDC.",
+            "x-payment-info": {
+              protocols: ["mpp"],
+              pricingMode: "fixed",
+              price: "10000",
+              intent: "charge",
+              method: "tempo",
+              amount: "10000",
+              currency: PATHUSD,
+              description: "$0.01 per proof",
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    description: "Circuit-specific inputs (nullifiers, commitments, paths, etc.)",
+                    additionalProperties: true,
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Proof generated successfully",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        success: { type: "boolean" },
+                        circuit: { type: "string" },
+                        proof: { type: "object", description: "Groth16 proof (pi_a, pi_b, pi_c)" },
+                        publicSignals: { type: "array", items: { type: "string" } },
+                        contractProof: { type: "array", items: { type: "string" }, description: "uint256[8] for Solidity verifier" },
+                        generationTimeMs: { type: "number" },
+                      },
+                      required: ["success", "circuit", "proof", "publicSignals", "contractProof"],
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required — MPP payment needed" },
+            },
+          },
+        },
+        "/prove/2x2": {
+          post: {
+            summary: "Generate Groth16 proof (2-input, 2-output JoinSplit)",
+            description: "Generates a Groth16 ZK proof for a 2x2 JoinSplit circuit. Requires MPP payment of $0.02 USDC.",
+            "x-payment-info": {
+              protocols: ["mpp"],
+              pricingMode: "fixed",
+              price: "20000",
+              intent: "charge",
+              method: "tempo",
+              amount: "20000",
+              currency: PATHUSD,
+              description: "$0.02 per proof",
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    description: "Circuit-specific inputs (nullifiers, commitments, paths, etc.)",
+                    additionalProperties: true,
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Proof generated successfully",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        success: { type: "boolean" },
+                        circuit: { type: "string" },
+                        proof: { type: "object", description: "Groth16 proof (pi_a, pi_b, pi_c)" },
+                        publicSignals: { type: "array", items: { type: "string" } },
+                        contractProof: { type: "array", items: { type: "string" }, description: "uint256[8] for Solidity verifier" },
+                        generationTimeMs: { type: "number" },
+                      },
+                      required: ["success", "circuit", "proof", "publicSignals", "contractProof"],
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required — MPP payment needed" },
+            },
+          },
+        },
+        "/verify/{circuit}": {
+          post: {
+            summary: "Verify a Groth16 proof",
+            description: "Verifies a previously generated proof. Free, no payment required.",
+            parameters: [
+              {
+                name: "circuit",
+                in: "path",
+                required: true,
+                schema: { type: "string", enum: ["1x2", "2x2"] },
+              },
+            ],
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      proof: { type: "object", description: "Groth16 proof object" },
+                      publicSignals: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["proof", "publicSignals"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Verification result",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        success: { type: "boolean" },
+                        valid: { type: "boolean" },
+                        verificationTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     })
   );
 
   // LLMs.txt (free)
   app.get("/llms.txt", (c) => {
     c.header("Content-Type", "text/plain");
-    return c.body(`# ZK Proof Service
+    return c.body(`# ZKProver
 > Pay-per-proof Groth16 ZK proving via MPP. Real compute, not a proxy.
 
 ## Live
@@ -188,7 +415,7 @@ https://github.com/Himess/zk-proof-service`);
       methods: [
         tempo({
           currency: PATHUSD,
-          recipient: account.address,
+          recipient: OWNER_WALLET,
           feePayer: true,
         }),
       ],
@@ -233,7 +460,7 @@ https://github.com/Himess/zk-proof-service`);
 
   // Start
   serve({ fetch: app.fetch, port: PORT }, () => {
-    console.log(`\nZK Proof Service running on http://localhost:${PORT}`);
+    console.log(`\nZKProver running on http://localhost:${PORT}`);
     console.log(`\nEndpoints:`);
     console.log(`  GET  /health        — Health check (free)`);
     console.log(`  GET  /circuits      — List circuits (free)`);
