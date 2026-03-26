@@ -275,7 +275,24 @@ tempo request -v -X POST \\
                 "application/json": {
                   schema: {
                     type: "object",
-                    description: "Circuit-specific inputs (nullifiers, commitments, paths, etc.)",
+                    description: "JoinSplit circuit inputs for ZK proof generation",
+                    properties: {
+                      root: { type: "string", description: "Merkle tree root" },
+                      publicAmount: { type: "string", description: "Public amount for deposit/withdrawal" },
+                      extDataHash: { type: "string", description: "External data hash" },
+                      protocolFee: { type: "string", description: "Protocol fee" },
+                      inputNullifiers: { type: "array", items: { type: "string" } },
+                      outputCommitments: { type: "array", items: { type: "string" } },
+                      inAmount: { type: "array", items: { type: "string" } },
+                      inPrivateKey: { type: "array", items: { type: "string" } },
+                      inBlinding: { type: "array", items: { type: "string" } },
+                      inPathIndices: { type: "array", items: { type: "string" } },
+                      inPathElements: { type: "array", items: { type: "array", items: { type: "string" } } },
+                      outAmount: { type: "array", items: { type: "string" } },
+                      outPubkey: { type: "array", items: { type: "string" } },
+                      outBlinding: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["root", "publicAmount", "extDataHash", "inputNullifiers", "outputCommitments", "inAmount", "inPrivateKey", "inBlinding", "inPathIndices", "inPathElements", "outAmount", "outPubkey", "outBlinding"],
                     additionalProperties: true,
                   },
                 },
@@ -320,7 +337,24 @@ tempo request -v -X POST \\
                 "application/json": {
                   schema: {
                     type: "object",
-                    description: "Circuit-specific inputs (nullifiers, commitments, paths, etc.)",
+                    description: "JoinSplit circuit inputs for ZK proof generation",
+                    properties: {
+                      root: { type: "string", description: "Merkle tree root" },
+                      publicAmount: { type: "string", description: "Public amount for deposit/withdrawal" },
+                      extDataHash: { type: "string", description: "External data hash" },
+                      protocolFee: { type: "string", description: "Protocol fee" },
+                      inputNullifiers: { type: "array", items: { type: "string" } },
+                      outputCommitments: { type: "array", items: { type: "string" } },
+                      inAmount: { type: "array", items: { type: "string" } },
+                      inPrivateKey: { type: "array", items: { type: "string" } },
+                      inBlinding: { type: "array", items: { type: "string" } },
+                      inPathIndices: { type: "array", items: { type: "string" } },
+                      inPathElements: { type: "array", items: { type: "array", items: { type: "string" } } },
+                      outAmount: { type: "array", items: { type: "string" } },
+                      outPubkey: { type: "array", items: { type: "string" } },
+                      outBlinding: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["root", "publicAmount", "extDataHash", "inputNullifiers", "outputCommitments", "inAmount", "inPrivateKey", "inBlinding", "inPathIndices", "inPathElements", "outAmount", "outPubkey", "outBlinding"],
                     additionalProperties: true,
                   },
                 },
@@ -463,6 +497,7 @@ https://github.com/Himess/zk-proof-service`);
     if (process.env.NO_MPP === "1") throw new Error("MPP disabled via NO_MPP=1");
     const { Mppx, tempo } = await import("mppx/hono");
     const mppx = Mppx.create({
+      realm: "himess-zk-proof-service.hf.space",
       methods: [
         tempo({
           currency: PATHUSD,
