@@ -248,7 +248,7 @@ tempo request -v -X POST \\
             description: "Generates a Groth16 ZK proof for a 1x2 JoinSplit circuit. Requires MPP payment of $0.01 USDC.",
             "x-payment-info": {
               pricingMode: "fixed",
-              price: "10000",
+              price: "0.01",
               protocols: ["mpp"],
             },
             requestBody: {
@@ -293,7 +293,7 @@ tempo request -v -X POST \\
             description: "Generates a Groth16 ZK proof for a 2x2 JoinSplit circuit. Requires MPP payment of $0.02 USDC.",
             "x-payment-info": {
               pricingMode: "fixed",
-              price: "20000",
+              price: "0.02",
               protocols: ["mpp"],
             },
             requestBody: {
