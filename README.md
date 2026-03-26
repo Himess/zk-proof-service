@@ -1,4 +1,13 @@
-# zk-proof-service
+---
+title: ZKProver
+emoji: 🔐
+colorFrom: green
+colorTo: indigo
+sdk: docker
+app_port: 7860
+---
+
+# ZKProver
 
 **Pay-per-proof ZK proving service via MPP**
 
