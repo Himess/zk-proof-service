@@ -4,6 +4,7 @@ import { serve } from "@hono/node-server";
 import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
+import { registerMerkleRoutes } from "./merkle-routes.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { createClient, http } from "viem";
 import {
@@ -1104,8 +1105,11 @@ tempo request -v -X POST \\
         "POST /privacy/deposit",
         "POST /privacy/transfer",
         "POST /privacy/withdraw",
+        "POST /merkle/build",
+        "POST /merkle/prove",
+        "POST /hash/poseidon",
       ],
-      description: "ZKProver: pay-per-proof Groth16 ZK proving service via MPP. POST circuit inputs to /prove/1x2 ($0.01) or /prove/2x2 ($0.02). Privacy operations: /privacy/deposit ($0.03), /privacy/transfer ($0.03), /privacy/withdraw ($0.03). Verification at /verify/:circuit is free.",
+      description: "ZKProver: ZK proving, privacy proofs, Merkle trees, and Poseidon hashing via MPP. Prove: /prove/1x2 ($0.01), /prove/2x2 ($0.02). Privacy: /privacy/deposit, /transfer, /withdraw ($0.03 each). Merkle: /merkle/build ($0.01), /merkle/prove ($0.005). Hash: /hash/poseidon ($0.001). Verification free.",
     })
   );
 
@@ -1227,6 +1231,9 @@ https://github.com/Himess/zk-proof-service`);
       handleWithdraw,
     );
 
+    // Register Merkle & Hash routes with MPP
+    registerMerkleRoutes(app, mppx);
+
     console.log("MPP payment gating enabled");
   } catch (e) {
     console.warn("mppx not available, running free:", (e as Error).message);
@@ -1235,6 +1242,9 @@ https://github.com/Himess/zk-proof-service`);
     app.post("/privacy/deposit", handleDeposit);
     app.post("/privacy/transfer", handleTransfer);
     app.post("/privacy/withdraw", handleWithdraw);
+
+    // Register Merkle & Hash routes without MPP
+    registerMerkleRoutes(app);
   }
 
   // Verify proof (free)
