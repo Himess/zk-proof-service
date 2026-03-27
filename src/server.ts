@@ -300,6 +300,7 @@ tempo request -v -X POST \\
             summary: "Health check",
             description: "Returns service status, wallet address, and chain info. Free, no payment required.",
             security: [],
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
             parameters: [
               {
                 name: "format",
@@ -333,6 +334,7 @@ tempo request -v -X POST \\
             summary: "List available circuits and pricing",
             description: "Returns all supported ZK circuits with constraint counts and per-proof pricing. Free, no payment required.",
             security: [],
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
             parameters: [
               {
                 name: "format",
@@ -499,6 +501,7 @@ tempo request -v -X POST \\
             summary: "Verify a Groth16 proof",
             description: "Verifies a previously generated proof. Free, no payment required.",
             security: [],
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
             parameters: [
               {
                 name: "circuit",
