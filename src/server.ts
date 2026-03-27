@@ -39,8 +39,9 @@ function withX402Schema(
       },
       accepts: [{
         scheme: "exact",
-        network: "tempo",
-        maxAmountRequired: amount,
+        network: "eip155:42431",
+        amount,
+        maxTimeoutSeconds: 300,
         asset: PATHUSD,
         payTo: OWNER_WALLET,
       }],
