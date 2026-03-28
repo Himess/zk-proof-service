@@ -7,3 +7,4 @@ dist/
 # Uncomment below to exclude from git:
 # circuits/**/*.zkey
 # circuits/**/*.wasm
+*.ptau
