@@ -9,6 +9,8 @@ import { registerAttestationRoutes } from "./attestation-routes.js";
 import { registerBatchRoutes } from "./batch-routes.js";
 import { registerHashRoutes } from "./hash-routes.js";
 import { registerCompressionRoutes } from "./compression-routes.js";
+import { registerStealthRoutes } from "./stealth-routes.js";
+import { registerOnchainRoutes } from "./onchain-routes.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { createClient, http } from "viem";
 import {
@@ -1241,6 +1243,8 @@ https://github.com/Himess/zk-proof-service`);
     registerBatchRoutes(app, mppx);
     registerHashRoutes(app, mppx);
     registerCompressionRoutes(app, mppx);
+    registerStealthRoutes(app, mppx);
+    registerOnchainRoutes(app, mppx);
 
     console.log("MPP payment gating enabled");
   } catch (e) {
@@ -1257,6 +1261,8 @@ https://github.com/Himess/zk-proof-service`);
     registerBatchRoutes(app);
     registerHashRoutes(app);
     registerCompressionRoutes(app);
+    registerStealthRoutes(app);
+    registerOnchainRoutes(app);
   }
 
   // Verify proof (free)
