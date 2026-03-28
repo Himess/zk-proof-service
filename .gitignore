@@ -8,3 +8,4 @@ dist/
 # circuits/**/*.zkey
 # circuits/**/*.wasm
 *.ptau
+*.r1cs
