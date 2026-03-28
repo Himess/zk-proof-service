@@ -5,6 +5,10 @@ import { readFileSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { registerMerkleRoutes } from "./merkle-routes.js";
+import { registerAttestationRoutes } from "./attestation-routes.js";
+import { registerBatchRoutes } from "./batch-routes.js";
+import { registerHashRoutes } from "./hash-routes.js";
+import { registerCompressionRoutes } from "./compression-routes.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { createClient, http } from "viem";
 import {
@@ -1231,8 +1235,12 @@ https://github.com/Himess/zk-proof-service`);
       handleWithdraw,
     );
 
-    // Register Merkle & Hash routes with MPP
+    // Register all additional routes with MPP
     registerMerkleRoutes(app, mppx);
+    registerAttestationRoutes(app, mppx);
+    registerBatchRoutes(app, mppx);
+    registerHashRoutes(app, mppx);
+    registerCompressionRoutes(app, mppx);
 
     console.log("MPP payment gating enabled");
   } catch (e) {
@@ -1243,8 +1251,12 @@ https://github.com/Himess/zk-proof-service`);
     app.post("/privacy/transfer", handleTransfer);
     app.post("/privacy/withdraw", handleWithdraw);
 
-    // Register Merkle & Hash routes without MPP
+    // Register all additional routes without MPP
     registerMerkleRoutes(app);
+    registerAttestationRoutes(app);
+    registerBatchRoutes(app);
+    registerHashRoutes(app);
+    registerCompressionRoutes(app);
   }
 
   // Verify proof (free)
