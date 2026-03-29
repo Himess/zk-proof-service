@@ -9,3 +9,5 @@ dist/
 # circuits/**/*.wasm
 *.ptau
 *.r1cs
+*.plonk.zkey
+*_plonk.zkey
