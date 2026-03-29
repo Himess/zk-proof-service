@@ -323,6 +323,116 @@ The `compressed` field is the 256-byte proof (8 x 32-byte field elements). The `
 
 ---
 
+## Step 10: ZK Attestation (Trustless Balance Proof)
+
+Generate a real Groth16 ZK proof that a committed balance exceeds a threshold. Unlike credential attestations (Step 5), this proof is trustless -- anyone can verify it independently.
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"value":"50000","blinding":"98765432109876543210","threshold":"10000"}' \
+  https://himess-zk-proof-service.hf.space/attest/zk/balance-gt
+```
+
+**Expected output (key fields):**
+```json
+{
+  "proof": { "pi_a": ["..."], "pi_b": [["..."], ["..."]], "pi_c": ["..."] },
+  "publicSignals": ["<commitment>", "10000"],
+  "commitment": "...",
+  "threshold": "10000",
+  "verified": true,
+  "generationTimeMs": 3200,
+  "circuit": "BalanceGT(64)",
+  "protocol": "groth16",
+  "curve": "bn128"
+}
+```
+
+Verify the ZK attestation (free):
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{
+    "proof": <paste proof from above>,
+    "publicSignals": <paste publicSignals from above>
+  }' \
+  https://himess-zk-proof-service.hf.space/attest/zk/verify
+```
+
+**Cost:** $0.01 (verification is free)
+
+---
+
+## Step 11: Generate Stealth Address Keys
+
+Generate an ERC-5564 stealth meta-address keypair for private payments.
+
+```bash
+tempo request -v -X POST \
+  https://himess-zk-proof-service.hf.space/stealth/generate-keys
+```
+
+**Expected output:**
+```json
+{
+  "success": true,
+  "metaAddress": "st:eth:0x...",
+  "spendingPubKey": "0x...",
+  "viewingPubKey": "0x...",
+  "spendingKey": "0x...",
+  "viewingKey": "0x...",
+  "computeTimeMs": 5
+}
+```
+
+Save the `metaAddress` for the next step.
+
+**Cost:** $0.002
+
+---
+
+## Step 12: Derive a Stealth Address
+
+Use the meta-address from Step 11 to derive a one-time stealth address for sending a payment.
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"metaAddress":"<metaAddress from step 11>"}' \
+  https://himess-zk-proof-service.hf.space/stealth/derive-address
+```
+
+**Expected output:**
+```json
+{
+  "success": true,
+  "stealthAddress": "0x...",
+  "ephemeralPubKey": "0x...",
+  "computeTimeMs": 3
+}
+```
+
+**Cost:** $0.002
+
+---
+
+## Step 13: On-chain Balance Attestation
+
+Verify a token balance on the Tempo blockchain.
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"address":"0x4013AE1C1473f6CB37AA44eedf58BDF7Fa4068F7","threshold":"0"}' \
+  https://himess-zk-proof-service.hf.space/attest/onchain/balance
+```
+
+**Cost:** $0.005
+
+---
+
 ## Full Demo Cost Summary
 
 | Step | Endpoint | Cost |
@@ -338,7 +448,12 @@ The `compressed` field is the 256-byte proof (8 x 32-byte field elements). The `
 | 7b. Verify Merkle proof | POST /merkle/verify | Free |
 | 8. Poseidon hash | POST /hash/poseidon | $0.001 |
 | 9. Compress proof | POST /proof/compress | $0.002 |
-| **Total** | | **$0.054** |
+| 10. ZK attestation | POST /attest/zk/balance-gt | $0.01 |
+| 10b. Verify ZK attestation | POST /attest/zk/verify | Free |
+| 11. Stealth keys | POST /stealth/generate-keys | $0.002 |
+| 12. Stealth address | POST /stealth/derive-address | $0.002 |
+| 13. On-chain attestation | POST /attest/onchain/balance | $0.005 |
+| **Total** | | **$0.073** |
 
 ---
 
@@ -408,6 +523,70 @@ tempo request -v -X POST \
   -H "Content-Type: application/json" \
   -d '{"circuit":"1x2","inputs":[<input1>,<input2>,<input3>]}' \
   https://himess-zk-proof-service.hf.space/prove/batch
+```
+
+### Stealth Address Full Flow
+
+Generate keys, derive a stealth address, and recover the private key:
+
+```bash
+# 1. Recipient generates a stealth meta-address
+tempo request -v -X POST \
+  https://himess-zk-proof-service.hf.space/stealth/generate-keys
+
+# 2. Sender derives a one-time stealth address from the meta-address
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"metaAddress":"<metaAddress from step 1>"}' \
+  https://himess-zk-proof-service.hf.space/stealth/derive-address
+
+# 3. Recipient scans for payments using their viewing key
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"viewingKey":"<viewingKey>","spendingPubKey":"<spendingPubKey>","ephemeralPubKeys":["<ephemeralPubKey from step 2>"]}' \
+  https://himess-zk-proof-service.hf.space/stealth/scan
+
+# 4. Recipient recovers the stealth private key
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"spendingKey":"<spendingKey>","viewingKey":"<viewingKey>","ephemeralPubKey":"<ephemeralPubKey>"}' \
+  https://himess-zk-proof-service.hf.space/stealth/compute-key
+```
+
+### On-chain NFT Verification
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"address":"0xYourAddress","nftContract":"0xNFTContract","tokenId":"42"}' \
+  https://himess-zk-proof-service.hf.space/attest/onchain/nft
+```
+
+### On-chain Contract Interaction Check
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"address":"0xYourAddress","contractAddress":"0xContract"}' \
+  https://himess-zk-proof-service.hf.space/attest/onchain/interaction
+```
+
+### ZK Balance Attestation (Trustless)
+
+Unlike credential attestations which require trusting the server, ZK attestations produce a Groth16 proof anyone can verify:
+
+```bash
+# Generate ZK proof that balance (50000) > threshold (10000)
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"value":"50000","blinding":"98765432109876543210","threshold":"10000"}' \
+  https://himess-zk-proof-service.hf.space/attest/zk/balance-gt
+
+# Verify (free, no trust required)
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"proof":{...},"publicSignals":[...]}' \
+  https://himess-zk-proof-service.hf.space/attest/zk/verify
 ```
 
 ### List Circuits and Pricing

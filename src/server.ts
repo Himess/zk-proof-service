@@ -577,8 +577,8 @@ pre{background:#1a1a2e;padding:16px;border-radius:8px;overflow-x:auto;font-size:
 table{border-collapse:collapse;width:100%}td,th{border:1px solid #333;padding:8px;text-align:left}th{background:#1a1a2e}</style></head>
 <body>
 <h1>ZKProver</h1>
-<p><span class="badge">LIVE</span> <span class="badge">Groth16</span> <span class="badge">Privacy</span> <span class="badge">MPP</span></p>
-<p>Pay-per-proof ZK proving via <a href="https://mpp.dev">Tempo MPP</a>. Real compute, not a proxy. Now with privacy-preserving proofs.</p>
+<p><span class="badge">LIVE</span> <span class="badge">Groth16</span> <span class="badge">Privacy</span> <span class="badge">Stealth</span> <span class="badge">Attestation</span> <span class="badge">Merkle</span> <span class="badge">Hashing</span> <span class="badge">MPP</span></p>
+<p>Full-stack zero-knowledge proving service via <a href="https://mpp.dev">Tempo MPP</a>. ZK proofs, privacy transactions, stealth addresses, attestations, Merkle trees, and ZK-friendly hashing. Real compute, not a proxy.</p>
 
 <h2>Try it</h2>
 <pre>tempo request -t https://himess-zk-proof-service.hf.space/circuits
@@ -591,33 +591,103 @@ tempo request -v -X POST \\
 tempo request -v -X POST \\
   -H "Content-Type: application/json" \\
   -d '{"amount":"1000000"}' \\
-  https://himess-zk-proof-service.hf.space/privacy/deposit</pre>
+  https://himess-zk-proof-service.hf.space/privacy/deposit
 
-<h2>Proving Endpoints</h2>
+tempo request -v -X POST \\
+  -H "Content-Type: application/json" \\
+  -d '{"inputs":["12345","67890"]}' \\
+  https://himess-zk-proof-service.hf.space/hash/poseidon</pre>
+
+<h2>Discovery</h2>
 <table>
 <tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
 <tr><td>GET</td><td><a href="/health">/health</a></td><td>Free</td><td>Health check</td></tr>
-<tr><td>GET</td><td><a href="/circuits">/circuits</a></td><td>Free</td><td>List circuits & pricing</td></tr>
+<tr><td>GET</td><td><a href="/circuits">/circuits</a></td><td>Free</td><td>List circuits &amp; pricing</td></tr>
+<tr><td>GET</td><td><a href="/pool">/pool</a></td><td>Free</td><td>Privacy pool info</td></tr>
 <tr><td>GET</td><td><a href="/llms.txt">/llms.txt</a></td><td>Free</td><td>Agent discovery</td></tr>
-<tr><td>POST</td><td>/prove/1x2</td><td>$0.01</td><td>Generate 1x2 proof</td></tr>
-<tr><td>POST</td><td>/prove/2x2</td><td>$0.02</td><td>Generate 2x2 proof</td></tr>
+<tr><td>GET</td><td><a href="/openapi.json">/openapi.json</a></td><td>Free</td><td>OpenAPI spec</td></tr>
+<tr><td>GET</td><td><a href="/.well-known/x402">/.well-known/x402</a></td><td>Free</td><td>x402 resource list</td></tr>
+</table>
+
+<h2>ZK Proving</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/prove/1x2</td><td>$0.01</td><td>Generate Groth16 proof (1x2 JoinSplit)</td></tr>
+<tr><td>POST</td><td>/prove/2x2</td><td>$0.02</td><td>Generate Groth16 proof (2x2 JoinSplit)</td></tr>
+<tr><td>POST</td><td>/prove/batch</td><td>$0.008/proof</td><td>Batch proof generation (20% discount)</td></tr>
 <tr><td>POST</td><td>/verify/:circuit</td><td>Free</td><td>Verify a proof</td></tr>
 </table>
 
-<h2>Privacy Endpoints</h2>
+<h2>Privacy Proofs</h2>
 <table>
 <tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
-<tr><td>GET</td><td><a href="/pool">/pool</a></td><td>Free</td><td>Pool info & circuits</td></tr>
 <tr><td>POST</td><td>/privacy/deposit</td><td>$0.03</td><td>Shielded deposit proof</td></tr>
 <tr><td>POST</td><td>/privacy/transfer</td><td>$0.03</td><td>Private transfer proof</td></tr>
 <tr><td>POST</td><td>/privacy/withdraw</td><td>$0.03</td><td>Withdrawal proof</td></tr>
+</table>
+
+<h2>ZK Attestation</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/attest/zk/balance-gt</td><td>$0.01</td><td>ZK proof: balance &gt; threshold</td></tr>
+<tr><td>POST</td><td>/attest/zk/verify</td><td>Free</td><td>Verify ZK attestation</td></tr>
+</table>
+
+<h2>Credential Attestation</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/attest/commitment</td><td>$0.001</td><td>Create Poseidon commitment</td></tr>
+<tr><td>POST</td><td>/attest/balance-gt</td><td>$0.005</td><td>Attest balance &gt; threshold</td></tr>
+<tr><td>POST</td><td>/attest/range</td><td>$0.005</td><td>Attest value in range</td></tr>
+<tr><td>POST</td><td>/attest/membership</td><td>$0.005</td><td>Attest set membership</td></tr>
+<tr><td>POST</td><td>/attest/verify</td><td>Free</td><td>Verify attestation</td></tr>
+</table>
+
+<h2>On-chain Attestation (Tempo)</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/attest/onchain/balance</td><td>$0.005</td><td>Verify token balance on Tempo</td></tr>
+<tr><td>POST</td><td>/attest/onchain/nft</td><td>$0.005</td><td>Verify NFT ownership</td></tr>
+<tr><td>POST</td><td>/attest/onchain/interaction</td><td>$0.005</td><td>Verify contract interaction</td></tr>
+</table>
+
+<h2>Stealth Addresses</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/stealth/generate-keys</td><td>$0.002</td><td>Generate stealth meta-address</td></tr>
+<tr><td>POST</td><td>/stealth/derive-address</td><td>$0.002</td><td>Derive one-time stealth address</td></tr>
+<tr><td>POST</td><td>/stealth/scan</td><td>$0.005</td><td>Scan for stealth payments</td></tr>
+<tr><td>POST</td><td>/stealth/compute-key</td><td>$0.002</td><td>Recover stealth private key</td></tr>
+</table>
+
+<h2>Merkle Tree</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/merkle/build</td><td>$0.01</td><td>Build Poseidon Merkle tree</td></tr>
+<tr><td>POST</td><td>/merkle/prove</td><td>$0.005</td><td>Generate inclusion proof</td></tr>
+<tr><td>POST</td><td>/merkle/verify</td><td>Free</td><td>Verify inclusion proof</td></tr>
+</table>
+
+<h2>Hash Functions</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/hash/poseidon</td><td>$0.001</td><td>Poseidon hash</td></tr>
+<tr><td>POST</td><td>/hash/mimc</td><td>$0.001</td><td>MiMC sponge hash</td></tr>
+<tr><td>POST</td><td>/hash/pedersen</td><td>$0.001</td><td>Pedersen hash</td></tr>
+<tr><td>POST</td><td>/hash/keccak256</td><td>$0.001</td><td>Keccak256 hash</td></tr>
+</table>
+
+<h2>Proof Tools</h2>
+<table>
+<tr><th>Method</th><th>Path</th><th>Cost</th><th>Description</th></tr>
+<tr><td>POST</td><td>/proof/compress</td><td>$0.002</td><td>Compress proof + Solidity calldata</td></tr>
 </table>
 
 <h2>Performance</h2>
 <p>~2-5s proof generation · ~50ms verification · 13,726 constraints · BN254 curve</p>
 
 <h2>Links</h2>
-<p><a href="https://github.com/Himess/zk-proof-service">GitHub</a> · <a href="/llms.txt">llms.txt</a> · <a href="/circuits">API</a> · <a href="/pool">Pool Info</a></p>
+<p><a href="https://github.com/Himess/zk-proof-service">GitHub</a> · <a href="/llms.txt">llms.txt</a> · <a href="/openapi.json">OpenAPI</a> · <a href="/circuits">Circuits</a> · <a href="/pool">Pool Info</a></p>
 </body></html>`);
   });
 
@@ -659,9 +729,9 @@ tempo request -v -X POST \\
       openapi: "3.1.0",
       info: {
         title: "ZKProver",
-        version: "2.0.0",
-        description: "Pay-per-proof Groth16 ZK proving service on Tempo MPP. Now with privacy-preserving shielded deposits, transfers, and withdrawals.",
-        "x-guidance": "Use ZKProver to generate and verify Groth16 zero-knowledge proofs for JoinSplit circuits. POST circuit inputs to /prove/1x2 ($0.01) or /prove/2x2 ($0.02). For privacy operations: POST to /privacy/deposit ($0.03) to shield funds, /privacy/transfer ($0.03) for private transfers, /privacy/withdraw ($0.03) to unshield. Payment is automatic via MPP 402 flow. Verification at /verify/:circuit is free. Check /circuits for available circuits and pricing.",
+        version: "3.0.0",
+        description: "Full-stack zero-knowledge proving service on Tempo MPP. ZK proof generation, privacy transactions, stealth addresses, ZK/credential/on-chain attestations, Merkle trees, ZK-friendly hashing, and proof compression.",
+        "x-guidance": "ZKProver provides 30+ endpoints for zero-knowledge cryptography. ZK Proving: /prove/1x2 ($0.01), /prove/2x2 ($0.02), /prove/batch ($0.008/proof). Privacy: /privacy/deposit, /transfer, /withdraw ($0.03 each). ZK Attestation: /attest/zk/balance-gt ($0.01) for trustless proofs. Credential Attestation: /attest/commitment ($0.001), /attest/balance-gt, /attest/range, /attest/membership ($0.005 each). On-chain (Tempo): /attest/onchain/balance, /nft, /interaction ($0.005 each). Stealth Addresses: /stealth/generate-keys, /derive-address, /compute-key ($0.002 each), /stealth/scan ($0.005). Merkle: /merkle/build ($0.01), /merkle/prove ($0.005). Hashing: /hash/poseidon, /hash/mimc, /hash/pedersen, /hash/keccak256 ($0.001 each). Proof Tools: /proof/compress ($0.002). Verification endpoints are free. Payment is automatic via MPP 402 flow.",
       },
       "x-service-info": {
         categories: ["compute", "developer-tools"],
@@ -1098,6 +1168,900 @@ tempo request -v -X POST \\
             },
           },
         },
+        "/prove/batch": {
+          post: {
+            operationId: "proveBatch",
+            summary: "Batch proof generation (20% discount)",
+            tags: ["ZK Proving"],
+            description: "Generate multiple Groth16 proofs in a single request at $0.008/proof (20% discount vs individual). Min 2, max 20.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.008000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      circuit: { type: "string", enum: ["1x2", "2x2"], description: "Circuit type" },
+                      inputs: { type: "array", items: { type: "object" }, minItems: 2, maxItems: 20, description: "Array of circuit input objects" },
+                    },
+                    required: ["circuit", "inputs"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Batch proofs generated",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        success: { type: "boolean" },
+                        circuit: { type: "string" },
+                        results: { type: "array", items: { type: "object" } },
+                        totalTimeMs: { type: "number" },
+                        count: { type: "integer" },
+                        pricing: { type: "object" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/zk/balance-gt": {
+          post: {
+            operationId: "zkAttestBalanceGt",
+            summary: "ZK proof: balance > threshold",
+            tags: ["ZK Attestation"],
+            description: "Generate a Groth16 ZK proof that a committed balance exceeds a threshold. Trustless — anyone can verify. $0.01.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.010000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      value: { type: "string", description: "Secret value (balance)" },
+                      blinding: { type: "string", description: "Random blinding factor" },
+                      threshold: { type: "string", description: "Public threshold to prove against" },
+                    },
+                    required: ["value", "blinding", "threshold"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "ZK attestation proof generated",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        proof: { type: "object" },
+                        publicSignals: { type: "array", items: { type: "string" } },
+                        commitment: { type: "string" },
+                        threshold: { type: "string" },
+                        verified: { type: "boolean" },
+                        generationTimeMs: { type: "number" },
+                        circuit: { type: "string" },
+                        protocol: { type: "string" },
+                        curve: { type: "string" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/zk/verify": {
+          post: {
+            operationId: "zkAttestVerify",
+            summary: "Verify ZK attestation",
+            tags: ["ZK Attestation"],
+            description: "Verify a Groth16 ZK attestation proof. Free.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      proof: { type: "object", description: "Groth16 proof object" },
+                      publicSignals: { type: "array", items: { type: "string" }, description: "[commitment, threshold]" },
+                    },
+                    required: ["proof", "publicSignals"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Verification result",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        valid: { type: "boolean" },
+                        verificationTimeMs: { type: "number" },
+                        publicSignals: { type: "object" },
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        "/attest/commitment": {
+          post: {
+            operationId: "attestCommitment",
+            summary: "Create Poseidon commitment",
+            tags: ["Credential Attestation"],
+            description: "Create a Poseidon hash commitment from a value and blinding factor. $0.001.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.001000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      value: { type: "string", description: "Value to commit" },
+                      blinding: { type: "string", description: "Random blinding factor" },
+                    },
+                    required: ["value", "blinding"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Commitment created",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        commitment: { type: "string" },
+                        value: { type: "string" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/balance-gt": {
+          post: {
+            operationId: "attestBalanceGt",
+            summary: "Attest balance > threshold",
+            tags: ["Credential Attestation"],
+            description: "Server-signed attestation that a committed balance exceeds a threshold. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      commitment: { type: "string" },
+                      value: { type: "string" },
+                      blinding: { type: "string" },
+                      threshold: { type: "string" },
+                    },
+                    required: ["commitment", "value", "blinding", "threshold"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Attestation result", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/range": {
+          post: {
+            operationId: "attestRange",
+            summary: "Attest value in range",
+            tags: ["Credential Attestation"],
+            description: "Server-signed attestation that a committed value falls within [min, max]. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      commitment: { type: "string" },
+                      value: { type: "string" },
+                      blinding: { type: "string" },
+                      min: { type: "string" },
+                      max: { type: "string" },
+                    },
+                    required: ["commitment", "value", "blinding", "min", "max"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Attestation result", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/membership": {
+          post: {
+            operationId: "attestMembership",
+            summary: "Attest set membership",
+            tags: ["Credential Attestation"],
+            description: "Server-signed attestation that a committed value is a member of a Merkle set. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      commitment: { type: "string" },
+                      value: { type: "string" },
+                      blinding: { type: "string" },
+                      leaves: { type: "array", items: { type: "string" }, description: "Set of leaf values" },
+                    },
+                    required: ["commitment", "value", "blinding", "leaves"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Attestation result", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/verify": {
+          post: {
+            operationId: "attestVerify",
+            summary: "Verify attestation",
+            tags: ["Credential Attestation"],
+            description: "Verify a server-signed attestation. Free.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      attestation: { type: "object", description: "Attestation object to verify" },
+                    },
+                    required: ["attestation"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Verification result",
+                content: { "application/json": { schema: { type: "object", properties: { valid: { type: "boolean" } } } } },
+              },
+            },
+          },
+        },
+        "/attest/onchain/balance": {
+          post: {
+            operationId: "attestOnchainBalance",
+            summary: "Verify token balance on Tempo",
+            tags: ["On-chain Attestation"],
+            description: "Verify that an address holds a token balance above a threshold on Tempo chain. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      address: { type: "string", description: "Wallet address" },
+                      token: { type: "string", description: "Token contract address (optional, native if omitted)" },
+                      threshold: { type: "string", description: "Minimum balance threshold" },
+                    },
+                    required: ["address", "threshold"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Attestation result", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/onchain/nft": {
+          post: {
+            operationId: "attestOnchainNft",
+            summary: "Verify NFT ownership",
+            tags: ["On-chain Attestation"],
+            description: "Verify that an address owns a specific NFT on Tempo chain. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      address: { type: "string", description: "Wallet address" },
+                      nftContract: { type: "string", description: "NFT contract address" },
+                      tokenId: { type: "string", description: "Token ID" },
+                    },
+                    required: ["address", "nftContract", "tokenId"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Attestation result", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/attest/onchain/interaction": {
+          post: {
+            operationId: "attestOnchainInteraction",
+            summary: "Verify contract interaction",
+            tags: ["On-chain Attestation"],
+            description: "Verify that an address has interacted with a specific contract on Tempo chain. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      address: { type: "string", description: "Wallet address" },
+                      contractAddress: { type: "string", description: "Contract address" },
+                    },
+                    required: ["address", "contractAddress"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Attestation result", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/stealth/generate-keys": {
+          post: {
+            operationId: "stealthGenerateKeys",
+            summary: "Generate stealth meta-address",
+            tags: ["Stealth Addresses"],
+            description: "Generate an ERC-5564 stealth meta-address keypair. $0.002.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.002000",
+              protocols: ["x402", "mpp"],
+            },
+            responses: {
+              "200": {
+                description: "Stealth keypair generated",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        success: { type: "boolean" },
+                        metaAddress: { type: "string" },
+                        spendingPubKey: { type: "string" },
+                        viewingPubKey: { type: "string" },
+                        spendingKey: { type: "string" },
+                        viewingKey: { type: "string" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/stealth/derive-address": {
+          post: {
+            operationId: "stealthDeriveAddress",
+            summary: "Derive one-time stealth address",
+            tags: ["Stealth Addresses"],
+            description: "Derive a one-time stealth address from a stealth meta-address. $0.002.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.002000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      metaAddress: { type: "string", description: "Stealth meta-address (e.g. 'st:eth:0x...')" },
+                    },
+                    required: ["metaAddress"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Stealth address derived",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        success: { type: "boolean" },
+                        stealthAddress: { type: "string" },
+                        ephemeralPubKey: { type: "string" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/stealth/scan": {
+          post: {
+            operationId: "stealthScan",
+            summary: "Scan for stealth payments",
+            tags: ["Stealth Addresses"],
+            description: "Scan a list of ephemeral public keys to find stealth payments addressed to you. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      viewingKey: { type: "string", description: "Viewing private key (hex)" },
+                      spendingPubKey: { type: "string", description: "Spending public key (hex)" },
+                      ephemeralPubKeys: { type: "array", items: { type: "string" }, description: "Ephemeral public keys to scan" },
+                    },
+                    required: ["viewingKey", "spendingPubKey", "ephemeralPubKeys"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Scan results", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/stealth/compute-key": {
+          post: {
+            operationId: "stealthComputeKey",
+            summary: "Recover stealth private key",
+            tags: ["Stealth Addresses"],
+            description: "Compute the private key for a stealth address using spending key, viewing key, and ephemeral public key. $0.002.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.002000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      spendingKey: { type: "string", description: "Spending private key (hex)" },
+                      viewingKey: { type: "string", description: "Viewing private key (hex)" },
+                      ephemeralPubKey: { type: "string", description: "Ephemeral public key (hex)" },
+                    },
+                    required: ["spendingKey", "viewingKey", "ephemeralPubKey"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Stealth private key computed", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/merkle/build": {
+          post: {
+            operationId: "merkleBuild",
+            summary: "Build Poseidon Merkle tree",
+            tags: ["Merkle Tree"],
+            description: "Build a Poseidon Merkle tree from an array of leaves. Returns root and tree data. $0.01.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.010000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      leaves: { type: "array", items: { type: "string" }, description: "Leaf values" },
+                      depth: { type: "integer", description: "Tree depth (optional)" },
+                    },
+                    required: ["leaves"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Merkle tree built", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/merkle/prove": {
+          post: {
+            operationId: "merkleProve",
+            summary: "Generate Merkle inclusion proof",
+            tags: ["Merkle Tree"],
+            description: "Generate a Merkle inclusion proof for a leaf at a given index. $0.005.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.005000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      leaves: { type: "array", items: { type: "string" }, description: "Leaf values" },
+                      leafIndex: { type: "integer", description: "Index of the leaf to prove" },
+                      depth: { type: "integer", description: "Tree depth (optional)" },
+                    },
+                    required: ["leaves", "leafIndex"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Merkle proof generated", content: { "application/json": { schema: { type: "object" } } } },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/merkle/verify": {
+          post: {
+            operationId: "merkleVerify",
+            summary: "Verify Merkle inclusion proof",
+            tags: ["Merkle Tree"],
+            description: "Verify a Merkle inclusion proof. Free.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      root: { type: "string" },
+                      leaf: { type: "string" },
+                      pathElements: { type: "array", items: { type: "string" } },
+                      pathIndices: { type: "array", items: { type: "integer" } },
+                    },
+                    required: ["root", "leaf", "pathElements", "pathIndices"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": { description: "Verification result", content: { "application/json": { schema: { type: "object" } } } },
+            },
+          },
+        },
+        "/hash/poseidon": {
+          post: {
+            operationId: "hashPoseidon",
+            summary: "Poseidon hash",
+            tags: ["Hash Functions"],
+            description: "Compute a ZK-friendly Poseidon hash. $0.001.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.001000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      inputs: { type: "array", items: { type: "string" }, description: "Field element strings to hash" },
+                    },
+                    required: ["inputs"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Hash result",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        success: { type: "boolean" },
+                        hash: { type: "string" },
+                        inputCount: { type: "integer" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/hash/mimc": {
+          post: {
+            operationId: "hashMimc",
+            summary: "MiMC sponge hash",
+            tags: ["Hash Functions"],
+            description: "Compute a MiMC sponge hash (1 or 2 inputs). $0.001.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.001000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      inputs: { type: "array", items: { type: "string" }, minItems: 1, maxItems: 2, description: "1 or 2 field element strings" },
+                    },
+                    required: ["inputs"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Hash result",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        hash: { type: "string" },
+                        algorithm: { type: "string" },
+                        inputCount: { type: "integer" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/hash/pedersen": {
+          post: {
+            operationId: "hashPedersen",
+            summary: "Pedersen hash",
+            tags: ["Hash Functions"],
+            description: "Compute a Pedersen hash over BabyJubJub. $0.001.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.001000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      inputs: { type: "array", items: { type: "string" }, description: "Field element strings" },
+                    },
+                    required: ["inputs"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Hash result",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        hash: { type: "string" },
+                        algorithm: { type: "string" },
+                        inputCount: { type: "integer" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/hash/keccak256": {
+          post: {
+            operationId: "hashKeccak256",
+            summary: "Keccak256 hash",
+            tags: ["Hash Functions"],
+            description: "Compute an Ethereum-compatible Keccak256 hash. Accepts hex (0x...) or plaintext. $0.001.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.001000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      data: { type: "string", description: "Hex string (0x...) or plaintext to hash" },
+                    },
+                    required: ["data"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Hash result",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        hash: { type: "string" },
+                        algorithm: { type: "string" },
+                        inputSize: { type: "integer" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
+        "/proof/compress": {
+          post: {
+            operationId: "proofCompress",
+            summary: "Compress proof + Solidity calldata",
+            tags: ["Proof Tools"],
+            description: "Compress a Groth16 proof to minimal 256-byte format and generate Solidity calldata. $0.002.",
+            "x-payment-info": {
+              pricingMode: "fixed",
+              price: "0.002000",
+              protocols: ["x402", "mpp"],
+            },
+            requestBody: {
+              required: true,
+              content: {
+                "application/json": {
+                  schema: {
+                    type: "object",
+                    properties: {
+                      proof: { type: "object", description: "Groth16 proof with pi_a, pi_b, pi_c" },
+                      publicSignals: { type: "array", items: { type: "string" } },
+                    },
+                    required: ["proof", "publicSignals"],
+                  },
+                },
+              },
+            },
+            responses: {
+              "200": {
+                description: "Compressed proof",
+                content: {
+                  "application/json": {
+                    schema: {
+                      type: "object",
+                      properties: {
+                        compressed: { type: "string" },
+                        solidityCalldata: { type: "string" },
+                        format: { type: "string" },
+                        originalSize: { type: "integer" },
+                        compressedSize: { type: "integer" },
+                        compressionRatio: { type: "string" },
+                        computeTimeMs: { type: "number" },
+                      },
+                    },
+                  },
+                },
+              },
+              "402": { description: "Payment Required" },
+            },
+          },
+        },
       },
     })
   );
@@ -1109,14 +2073,31 @@ tempo request -v -X POST \\
       resources: [
         "POST /prove/1x2",
         "POST /prove/2x2",
+        "POST /prove/batch",
         "POST /privacy/deposit",
         "POST /privacy/transfer",
         "POST /privacy/withdraw",
+        "POST /attest/zk/balance-gt",
+        "POST /attest/commitment",
+        "POST /attest/balance-gt",
+        "POST /attest/range",
+        "POST /attest/membership",
+        "POST /attest/onchain/balance",
+        "POST /attest/onchain/nft",
+        "POST /attest/onchain/interaction",
+        "POST /stealth/generate-keys",
+        "POST /stealth/derive-address",
+        "POST /stealth/scan",
+        "POST /stealth/compute-key",
         "POST /merkle/build",
         "POST /merkle/prove",
         "POST /hash/poseidon",
+        "POST /hash/mimc",
+        "POST /hash/pedersen",
+        "POST /hash/keccak256",
+        "POST /proof/compress",
       ],
-      description: "ZKProver: ZK proving, privacy proofs, Merkle trees, and Poseidon hashing via MPP. Prove: /prove/1x2 ($0.01), /prove/2x2 ($0.02). Privacy: /privacy/deposit, /transfer, /withdraw ($0.03 each). Merkle: /merkle/build ($0.01), /merkle/prove ($0.005). Hash: /hash/poseidon ($0.001). Verification free.",
+      description: "ZKProver: Full-stack ZK proving service via MPP. ZK Proving: /prove/1x2 ($0.01), /prove/2x2 ($0.02), /prove/batch ($0.008/proof). Privacy: /privacy/deposit, /transfer, /withdraw ($0.03 each). ZK Attestation: /attest/zk/balance-gt ($0.01). Credential Attestation: /attest/commitment ($0.001), /attest/balance-gt, /attest/range, /attest/membership ($0.005 each). On-chain Attestation: /attest/onchain/balance, /nft, /interaction ($0.005 each). Stealth Addresses: /stealth/generate-keys, /derive-address, /compute-key ($0.002 each), /stealth/scan ($0.005). Merkle: /merkle/build ($0.01), /merkle/prove ($0.005). Hashing: /hash/poseidon, /mimc, /pedersen, /keccak256 ($0.001 each). Proof Tools: /proof/compress ($0.002). Verification endpoints free.",
     })
   );
 
@@ -1124,35 +2105,80 @@ tempo request -v -X POST \\
   app.get("/llms.txt", (c) => {
     c.header("Content-Type", "text/plain");
     return c.body(`# ZKProver
-> Pay-per-proof Groth16 ZK proving via MPP. Real compute, not a proxy. Now with privacy-preserving proofs.
+> Full-stack zero-knowledge proving service via Tempo MPP. ZK proofs, privacy transactions, stealth addresses, attestations, Merkle trees, and ZK-friendly hashing.
 
 ## Live
 https://himess-zk-proof-service.hf.space
 
-## Proving Endpoints
+## Discovery
 - GET /health — Health check (free)
 - GET /circuits — List circuits and pricing (free)
-- POST /prove/1x2 — Generate 1x2 JoinSplit proof ($0.01 MPP)
-- POST /prove/2x2 — Generate 2x2 JoinSplit proof ($0.02 MPP)
+- GET /pool — Privacy pool info (free)
+- GET /openapi.json — OpenAPI 3.1 spec (free)
+- GET /.well-known/x402 — x402 resource list (free)
+
+## ZK Proving
+- POST /prove/1x2 — Generate Groth16 proof, 1x2 JoinSplit ($0.01)
+- POST /prove/2x2 — Generate Groth16 proof, 2x2 JoinSplit ($0.02)
+- POST /prove/batch — Batch proof generation, 20% discount ($0.008/proof)
 - POST /verify/:circuit — Verify a proof (free)
 
-## Privacy Endpoints
-- GET /pool — Privacy pool info and available circuits (free)
-- POST /privacy/deposit — Generate shielded deposit proof ($0.03 MPP)
-- POST /privacy/transfer — Generate private transfer proof ($0.03 MPP)
-- POST /privacy/withdraw — Generate withdrawal proof ($0.03 MPP)
+## Privacy Proofs
+- POST /privacy/deposit — Shielded deposit proof ($0.03)
+- POST /privacy/transfer — Private transfer proof ($0.03)
+- POST /privacy/withdraw — Withdrawal proof ($0.03)
+
+## ZK Attestation
+- POST /attest/zk/balance-gt — ZK proof: balance > threshold ($0.01)
+- POST /attest/zk/verify — Verify ZK attestation (free)
+
+## Credential Attestation
+- POST /attest/commitment — Create Poseidon commitment ($0.001)
+- POST /attest/balance-gt — Attest balance > threshold ($0.005)
+- POST /attest/range — Attest value in range ($0.005)
+- POST /attest/membership — Attest set membership ($0.005)
+- POST /attest/verify — Verify attestation (free)
+
+## On-chain Attestation (Tempo)
+- POST /attest/onchain/balance — Verify token balance on Tempo ($0.005)
+- POST /attest/onchain/nft — Verify NFT ownership ($0.005)
+- POST /attest/onchain/interaction — Verify contract interaction ($0.005)
+
+## Stealth Addresses
+- POST /stealth/generate-keys — Generate stealth meta-address keypair ($0.002)
+- POST /stealth/derive-address — Derive one-time stealth address ($0.002)
+- POST /stealth/scan — Scan for stealth payments ($0.005)
+- POST /stealth/compute-key — Recover stealth private key ($0.002)
+
+## Merkle Tree
+- POST /merkle/build — Build Poseidon Merkle tree ($0.01)
+- POST /merkle/prove — Generate inclusion proof ($0.005)
+- POST /merkle/verify — Verify inclusion proof (free)
+
+## Hash Functions
+- POST /hash/poseidon — Poseidon hash ($0.001)
+- POST /hash/mimc — MiMC sponge hash ($0.001)
+- POST /hash/pedersen — Pedersen hash ($0.001)
+- POST /hash/keccak256 — Keccak256 hash ($0.001)
+
+## Proof Tools
+- POST /proof/compress — Compress proof + Solidity calldata ($0.002)
 
 ## Pricing
-- 1x2 circuit: $0.01 per proof
-- 2x2 circuit: $0.02 per proof
-- Privacy proofs (deposit/transfer/withdraw): $0.03 per proof
+- ZK proving: $0.01-$0.02/proof, batch $0.008/proof
+- Privacy proofs: $0.03/proof
+- ZK attestation: $0.01/proof
+- Credential attestation: $0.001-$0.005
+- On-chain attestation: $0.005
+- Stealth addresses: $0.002-$0.005
+- Merkle operations: $0.005-$0.01
+- Hash functions: $0.001
+- Proof compression: $0.002
+- Verification endpoints: free
 - Payment: USDC via Tempo MPP (automatic 402 flow)
 
 ## What This Does
-Generates Groth16 zero-knowledge proofs for JoinSplit circuits (private UTXO transactions).
-Returns proof, public signals, and uint256[8] contract-ready format for on-chain Solidity verifiers.
-Privacy endpoints generate proofs for shielded deposits (public to private), private transfers, and withdrawals (private to public) using Poseidon hashing and BN254 curve.
-Proof generation: ~3-5s warm. Verification: ~50ms.
+Full-stack ZK cryptography service with 30+ endpoints. Generates Groth16 proofs for JoinSplit circuits, privacy-preserving deposits/transfers/withdrawals, ZK balance attestations, credential attestations, on-chain state verification, ERC-5564 stealth addresses, Poseidon Merkle trees, and multiple ZK-friendly hash functions. Returns proofs, public signals, and Solidity-ready calldata. Proof generation: ~2-5s. Verification: ~50ms. BN254 curve.
 
 ## Source
 https://github.com/Himess/zk-proof-service`);
@@ -1298,17 +2324,51 @@ https://github.com/Himess/zk-proof-service`);
   // Start
   serve({ fetch: app.fetch, port: PORT }, () => {
     console.log(`\nZKProver running on http://localhost:${PORT}`);
-    console.log(`\nEndpoints:`);
-    console.log(`  GET  /health              — Health check (free)`);
-    console.log(`  GET  /circuits            — List circuits (free)`);
-    console.log(`  GET  /pool                — Privacy pool info (free)`);
-    console.log(`  POST /prove/1x2           — Generate 1x2 proof ($0.01 MPP)`);
-    console.log(`  POST /prove/2x2           — Generate 2x2 proof ($0.02 MPP)`);
-    console.log(`  POST /verify/1x2          — Verify 1x2 proof (free)`);
-    console.log(`  POST /verify/2x2          — Verify 2x2 proof (free)`);
-    console.log(`  POST /privacy/deposit     — Shielded deposit proof ($0.03 MPP)`);
-    console.log(`  POST /privacy/transfer    — Private transfer proof ($0.03 MPP)`);
-    console.log(`  POST /privacy/withdraw    — Withdrawal proof ($0.03 MPP)`);
+    console.log(`\n30+ Endpoints:`);
+    console.log(`  Discovery:`);
+    console.log(`    GET  /health                    — Health check (free)`);
+    console.log(`    GET  /circuits                  — List circuits (free)`);
+    console.log(`    GET  /pool                      — Privacy pool info (free)`);
+    console.log(`    GET  /openapi.json              — OpenAPI spec (free)`);
+    console.log(`    GET  /llms.txt                  — Agent discovery (free)`);
+    console.log(`  ZK Proving:`);
+    console.log(`    POST /prove/1x2                 — 1x2 proof ($0.01)`);
+    console.log(`    POST /prove/2x2                 — 2x2 proof ($0.02)`);
+    console.log(`    POST /prove/batch               — Batch proofs ($0.008/proof)`);
+    console.log(`    POST /verify/:circuit           — Verify proof (free)`);
+    console.log(`  Privacy:`);
+    console.log(`    POST /privacy/deposit           — Shielded deposit ($0.03)`);
+    console.log(`    POST /privacy/transfer          — Private transfer ($0.03)`);
+    console.log(`    POST /privacy/withdraw          — Withdrawal ($0.03)`);
+    console.log(`  ZK Attestation:`);
+    console.log(`    POST /attest/zk/balance-gt      — ZK balance proof ($0.01)`);
+    console.log(`    POST /attest/zk/verify          — Verify ZK attestation (free)`);
+    console.log(`  Credential Attestation:`);
+    console.log(`    POST /attest/commitment         — Poseidon commitment ($0.001)`);
+    console.log(`    POST /attest/balance-gt         — Balance attestation ($0.005)`);
+    console.log(`    POST /attest/range              — Range attestation ($0.005)`);
+    console.log(`    POST /attest/membership         — Membership attestation ($0.005)`);
+    console.log(`    POST /attest/verify             — Verify attestation (free)`);
+    console.log(`  On-chain Attestation:`);
+    console.log(`    POST /attest/onchain/balance    — Token balance ($0.005)`);
+    console.log(`    POST /attest/onchain/nft        — NFT ownership ($0.005)`);
+    console.log(`    POST /attest/onchain/interaction — Contract interaction ($0.005)`);
+    console.log(`  Stealth Addresses:`);
+    console.log(`    POST /stealth/generate-keys     — Generate keys ($0.002)`);
+    console.log(`    POST /stealth/derive-address    — Derive address ($0.002)`);
+    console.log(`    POST /stealth/scan              — Scan payments ($0.005)`);
+    console.log(`    POST /stealth/compute-key       — Compute key ($0.002)`);
+    console.log(`  Merkle Tree:`);
+    console.log(`    POST /merkle/build              — Build tree ($0.01)`);
+    console.log(`    POST /merkle/prove              — Inclusion proof ($0.005)`);
+    console.log(`    POST /merkle/verify             — Verify proof (free)`);
+    console.log(`  Hash Functions:`);
+    console.log(`    POST /hash/poseidon             — Poseidon ($0.001)`);
+    console.log(`    POST /hash/mimc                 — MiMC ($0.001)`);
+    console.log(`    POST /hash/pedersen             — Pedersen ($0.001)`);
+    console.log(`    POST /hash/keccak256            — Keccak256 ($0.001)`);
+    console.log(`  Proof Tools:`);
+    console.log(`    POST /proof/compress            — Compress proof ($0.002)`);
   });
 }
 

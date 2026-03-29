@@ -2,7 +2,7 @@
 
 ## Overview
 
-ZKProver is a pay-per-proof zero-knowledge proving service. It generates and verifies Groth16 ZK proofs for JoinSplit circuits (private UTXO transactions), provides privacy-preserving shielded deposits/transfers/withdrawals, builds Merkle trees, computes ZK-friendly hashes, and issues credential attestations.
+ZKProver is a full-stack zero-knowledge proving service with 30+ endpoints. It generates and verifies Groth16 ZK proofs for JoinSplit circuits (private UTXO transactions), provides privacy-preserving shielded deposits/transfers/withdrawals, ZK balance attestations (trustless Groth16 proofs), credential attestations, on-chain attestations for Tempo blockchain, ERC-5564 stealth addresses, Poseidon Merkle trees, multiple ZK-friendly hash functions, and proof compression.
 
 All paid endpoints use the **Tempo MPP (Micropayment Protocol)** for payment. When you call a paid endpoint without payment, the server returns HTTP 402 with payment instructions. The `tempo` CLI handles this automatically -- it detects the 402, pays the required amount in USDC on Tempo's network, and retries the request.
 
@@ -59,7 +59,7 @@ ZKProver uses the **MPP 402 flow** for payment. There are no API keys or tokens.
 3. Your client (the `tempo` CLI or any MPP-compatible agent) reads the 402 response, constructs a USDC payment transaction on the Tempo Moderato chain, and resends the request with the payment proof in the `X-PAYMENT` header.
 4. The server verifies payment and returns the result.
 
-**Free endpoints** (health, circuits, pool, verify, merkle/verify, attest/verify) skip this flow entirely.
+**Free endpoints** (health, circuits, pool, verify, merkle/verify, attest/verify, attest/zk/verify) skip this flow entirely.
 
 When using `tempo request`, steps 2-4 happen automatically. You just see the final result.
 
@@ -853,6 +853,374 @@ tempo request -v -X POST \
 
 ---
 
+### ZK Attestation Endpoints
+
+These endpoints generate real Groth16 ZK proofs for attestations. Unlike credential attestations (which use HMAC signatures and require trusting the server), ZK attestations are trustless -- anyone can independently verify the proof using only the public signals and verification key.
+
+---
+
+#### `POST /attest/zk/balance-gt`
+
+Generate a Groth16 ZK proof that a committed balance exceeds a threshold. The proof reveals nothing about the actual value -- only that it is greater than the threshold.
+
+**Price:** $0.01
+
+**Request body:**
+
+```json
+{
+  "value": "50000",
+  "blinding": "98765432109876543210",
+  "threshold": "10000"
+}
+```
+
+`value` is the secret balance (must be > threshold). `blinding` is a random blinding factor. `threshold` is the public threshold to prove against.
+
+**Response:**
+
+```json
+{
+  "proof": { "pi_a": ["..."], "pi_b": [["..."], ["..."]], "pi_c": ["..."] },
+  "publicSignals": ["<commitment>", "<threshold>"],
+  "commitment": "1234567890...",
+  "threshold": "10000",
+  "verified": true,
+  "generationTimeMs": 3200,
+  "circuit": "BalanceGT(64)",
+  "protocol": "groth16",
+  "curve": "bn128"
+}
+```
+
+The `publicSignals` contain only the commitment and threshold. The private inputs (value, blinding) are never revealed.
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"value":"50000","blinding":"98765432109876543210","threshold":"10000"}' \
+  https://himess-zk-proof-service.hf.space/attest/zk/balance-gt
+```
+
+---
+
+#### `POST /attest/zk/verify`
+
+Verify a ZK attestation proof. This is free and can be done by anyone -- no trust required.
+
+**Price:** Free
+
+**Request body:**
+
+```json
+{
+  "proof": { "pi_a": ["..."], "pi_b": [["..."], ["..."]], "pi_c": ["..."] },
+  "publicSignals": ["<commitment>", "<threshold>"]
+}
+```
+
+`publicSignals` must have exactly 2 elements: [commitment, threshold].
+
+**Response:**
+
+```json
+{
+  "valid": true,
+  "verificationTimeMs": 48,
+  "publicSignals": {
+    "commitment": "1234567890...",
+    "threshold": "10000"
+  }
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"proof":{...},"publicSignals":["<commitment>","<threshold>"]}' \
+  https://himess-zk-proof-service.hf.space/attest/zk/verify
+```
+
+---
+
+### On-chain Attestation Endpoints (Tempo)
+
+These endpoints verify on-chain state on the Tempo blockchain: token balances, NFT ownership, and contract interactions.
+
+---
+
+#### `POST /attest/onchain/balance`
+
+Verify that an address holds a token balance above a threshold on the Tempo chain.
+
+**Price:** $0.005
+
+**Request body:**
+
+```json
+{
+  "address": "0xYourAddress",
+  "token": "0xTokenContract",
+  "threshold": "1000000"
+}
+```
+
+`token` is optional -- omit it to check native balance. `threshold` is the minimum balance required.
+
+**Response:**
+
+```json
+{
+  "attested": true,
+  "address": "0xYourAddress",
+  "balance": "5000000",
+  "threshold": "1000000",
+  "meetsThreshold": true,
+  "computeTimeMs": 120
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"address":"0xYourAddress","threshold":"1000000"}' \
+  https://himess-zk-proof-service.hf.space/attest/onchain/balance
+```
+
+---
+
+#### `POST /attest/onchain/nft`
+
+Verify that an address owns a specific NFT on the Tempo chain.
+
+**Price:** $0.005
+
+**Request body:**
+
+```json
+{
+  "address": "0xYourAddress",
+  "nftContract": "0xNFTContract",
+  "tokenId": "42"
+}
+```
+
+**Response:**
+
+```json
+{
+  "attested": true,
+  "address": "0xYourAddress",
+  "nftContract": "0xNFTContract",
+  "tokenId": "42",
+  "isOwner": true,
+  "computeTimeMs": 95
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"address":"0xYourAddress","nftContract":"0xNFTContract","tokenId":"42"}' \
+  https://himess-zk-proof-service.hf.space/attest/onchain/nft
+```
+
+---
+
+#### `POST /attest/onchain/interaction`
+
+Verify that an address has interacted with a specific smart contract on the Tempo chain.
+
+**Price:** $0.005
+
+**Request body:**
+
+```json
+{
+  "address": "0xYourAddress",
+  "contractAddress": "0xContract"
+}
+```
+
+**Response:**
+
+```json
+{
+  "attested": true,
+  "address": "0xYourAddress",
+  "contractAddress": "0xContract",
+  "hasInteracted": true,
+  "computeTimeMs": 110
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"address":"0xYourAddress","contractAddress":"0xContract"}' \
+  https://himess-zk-proof-service.hf.space/attest/onchain/interaction
+```
+
+---
+
+### Stealth Address Endpoints
+
+ERC-5564-style stealth address operations for private payments. Generate stealth meta-addresses, derive one-time stealth addresses, scan for payments, and recover private keys.
+
+---
+
+#### `POST /stealth/generate-keys`
+
+Generate a stealth meta-address keypair (spending key + viewing key).
+
+**Price:** $0.002
+
+**Request body:** None (empty POST or `{}`)
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "metaAddress": "st:eth:0x...",
+  "spendingPubKey": "0x...",
+  "viewingPubKey": "0x...",
+  "spendingKey": "0x...",
+  "viewingKey": "0x...",
+  "computeTimeMs": 5
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  https://himess-zk-proof-service.hf.space/stealth/generate-keys
+```
+
+---
+
+#### `POST /stealth/derive-address`
+
+Derive a one-time stealth address from a recipient's stealth meta-address. The sender uses this to create an address only the recipient can spend from.
+
+**Price:** $0.002
+
+**Request body:**
+
+```json
+{
+  "metaAddress": "st:eth:0x..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "stealthAddress": "0x...",
+  "ephemeralPubKey": "0x...",
+  "computeTimeMs": 3
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"metaAddress":"st:eth:0x..."}' \
+  https://himess-zk-proof-service.hf.space/stealth/derive-address
+```
+
+---
+
+#### `POST /stealth/scan`
+
+Scan a list of ephemeral public keys to find stealth payments addressed to you.
+
+**Price:** $0.005
+
+**Request body:**
+
+```json
+{
+  "viewingKey": "0x...",
+  "spendingPubKey": "0x...",
+  "ephemeralPubKeys": ["0x...", "0x...", "0x..."]
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "matchedAddresses": ["0x..."],
+  "scannedCount": 3,
+  "computeTimeMs": 12
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"viewingKey":"0x...","spendingPubKey":"0x...","ephemeralPubKeys":["0x..."]}' \
+  https://himess-zk-proof-service.hf.space/stealth/scan
+```
+
+---
+
+#### `POST /stealth/compute-key`
+
+Recover the private key for a stealth address using your spending key, viewing key, and the ephemeral public key from the sender.
+
+**Price:** $0.002
+
+**Request body:**
+
+```json
+{
+  "spendingKey": "0x...",
+  "viewingKey": "0x...",
+  "ephemeralPubKey": "0x..."
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "stealthPrivateKey": "0x...",
+  "computeTimeMs": 3
+}
+```
+
+**Example:**
+
+```bash
+tempo request -v -X POST \
+  -H "Content-Type: application/json" \
+  -d '{"spendingKey":"0x...","viewingKey":"0x...","ephemeralPubKey":"0x..."}' \
+  https://himess-zk-proof-service.hf.space/stealth/compute-key
+```
+
+---
+
 ### Hash Endpoints
 
 ZK-friendly hash functions used in circuits and commitment schemes.
@@ -1291,14 +1659,23 @@ When using keccak256 with a `0x` prefix, the remaining characters must be valid 
 | `/privacy/deposit` | POST | $0.03 |
 | `/privacy/transfer` | POST | $0.03 |
 | `/privacy/withdraw` | POST | $0.03 |
-| `/merkle/build` | POST | $0.01 |
-| `/merkle/prove` | POST | $0.005 |
-| `/merkle/verify` | POST | Free |
+| `/attest/zk/balance-gt` | POST | $0.01 |
+| `/attest/zk/verify` | POST | Free |
 | `/attest/commitment` | POST | $0.001 |
 | `/attest/balance-gt` | POST | $0.005 |
 | `/attest/range` | POST | $0.005 |
 | `/attest/membership` | POST | $0.005 |
 | `/attest/verify` | POST | Free |
+| `/attest/onchain/balance` | POST | $0.005 |
+| `/attest/onchain/nft` | POST | $0.005 |
+| `/attest/onchain/interaction` | POST | $0.005 |
+| `/stealth/generate-keys` | POST | $0.002 |
+| `/stealth/derive-address` | POST | $0.002 |
+| `/stealth/scan` | POST | $0.005 |
+| `/stealth/compute-key` | POST | $0.002 |
+| `/merkle/build` | POST | $0.01 |
+| `/merkle/prove` | POST | $0.005 |
+| `/merkle/verify` | POST | Free |
 | `/hash/poseidon` | POST | $0.001 |
 | `/hash/mimc` | POST | $0.001 |
 | `/hash/pedersen` | POST | $0.001 |
@@ -1306,5 +1683,5 @@ When using keccak256 with a `0x` prefix, the remaining characters must be valid 
 | `/proof/compress` | POST | $0.002 |
 
 **Payment method:** USDC via Tempo MPP (automatic 402 flow)
-**Performance:** ~3-5s proof generation, ~50ms verification
+**Performance:** ~2-5s proof generation, ~50ms verification
 **Circuits:** Groth16 on BN254 curve, 13,726 constraints (1x2), depth-20 Merkle tree
