@@ -746,6 +746,10 @@ tempo request -v -X POST \\
           get: {
             summary: "Health check",
             description: "Returns service status, wallet address, and chain info. Free, no payment required.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
+            parameters: [
+              { name: "format", in: "query", required: false, schema: { type: "string", enum: ["json"], default: "json" } },
+            ],
             responses: {
               "200": {
                 description: "Service is healthy",
@@ -770,6 +774,10 @@ tempo request -v -X POST \\
           get: {
             summary: "List available circuits and pricing",
             description: "Returns all supported ZK circuits with constraint counts and per-proof pricing. Free, no payment required.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
+            parameters: [
+              { name: "format", in: "query", required: false, schema: { type: "string", enum: ["json"], default: "json" } },
+            ],
             responses: {
               "200": {
                 description: "Circuit list with pricing",
@@ -927,6 +935,7 @@ tempo request -v -X POST \\
           post: {
             summary: "Verify a Groth16 proof",
             description: "Verifies a previously generated proof. Free, no payment required.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
             parameters: [
               {
                 name: "circuit",
@@ -973,6 +982,10 @@ tempo request -v -X POST \\
           get: {
             summary: "Privacy pool info",
             description: "Returns privacy pool contract addresses, chain info, and available circuits. Free.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
+            parameters: [
+              { name: "format", in: "query", required: false, schema: { type: "string", enum: ["json"], default: "json" } },
+            ],
             responses: {
               "200": {
                 description: "Pool info",
@@ -1252,6 +1265,7 @@ tempo request -v -X POST \\
             summary: "Verify ZK attestation",
             tags: ["ZK Attestation"],
             description: "Verify a Groth16 ZK attestation proof. Free.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
             requestBody: {
               required: true,
               content: {
@@ -1441,6 +1455,7 @@ tempo request -v -X POST \\
             summary: "Verify attestation",
             tags: ["Credential Attestation"],
             description: "Verify a server-signed attestation. Free.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
             requestBody: {
               required: true,
               content: {
@@ -1792,6 +1807,7 @@ tempo request -v -X POST \\
             summary: "Verify Merkle inclusion proof",
             tags: ["Merkle Tree"],
             description: "Verify a Merkle inclusion proof. Free.",
+            "x-payment-info": { pricingMode: "fixed", price: "0", protocols: ["mpp"] },
             requestBody: {
               required: true,
               content: {
